@@ -1,0 +1,42 @@
+{
+  "originHash" : "765cae2199aff3546a0cd658c108f55bc4a255596802766d79f8ce26ff211ffe",
+  "pins" : [
+    {
+      "identity" : "aquarium",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dkoster95/Aquarium.git",
+      "state" : {
+        "revision" : "7b470ef8cffc54a6c56dbb51287f03eb9d382d57",
+        "version" : "1.0.2"
+      }
+    },
+    {
+      "identity" : "countriesapi",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dkoster95/CountriesAPI",
+      "state" : {
+        "branch" : "main",
+        "revision" : "e0029cd58013933a80786430c1d3f41b6a6c08a8"
+      }
+    },
+    {
+      "identity" : "qhvalidator",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dkoster95/QHValidator.git",
+      "state" : {
+        "revision" : "aa235682f4167775c3708c2f6b163a6e0552b5b6",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "quickhatchhttp",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dkoster95/QuickHatchHTTP.git",
+      "state" : {
+        "revision" : "696456d7fec4f2ff5a47d03923f190c29203df64",
+        "version" : "1.0.2"
+      }
+    }
+  ],
+  "version" : 3
+}
