@@ -16,7 +16,16 @@
       "location" : "https://github.com/dkoster95/CountriesAPI",
       "state" : {
         "branch" : "main",
-        "revision" : "e0029cd58013933a80786430c1d3f41b6a6c08a8"
+        "revision" : "f14c8dd2af81ed4145f07078d2745e595044f12d"
+      }
+    },
+    {
+      "identity" : "pelicanswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dkoster95/PelicanSwift.git",
+      "state" : {
+        "revision" : "befc4eab9eb2981df3239c14a4e2040085412c55",
+        "version" : "3.1.0"
       }
     },
     {

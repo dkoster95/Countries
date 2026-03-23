@@ -31,6 +31,7 @@ public class CountryListViewModel1: CountryListViewModel {
     private let searchInputSubject = PassthroughSubject<String, Never>()
     @ObservationIgnored
     private var cancellables = Set<AnyCancellable>()
+    @ObservationIgnored
     private let logger = Logger(subsystem: "CountriesUI", category: "CountryList")
     
     public init(dataProvider: (any FindAllCountriesDataProvidable)) {

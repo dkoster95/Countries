@@ -23,6 +23,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/dkoster95/CountriesAPI", branch: "main"),
+        .package(url: "https://github.com/dkoster95/PelicanSwift.git", from: "3.1.0"),
         .package(url: "https://github.com/dkoster95/Aquarium.git",
                  from: "1.0.2"),
         .package(url: "https://github.com/dkoster95/QHValidator.git",
@@ -43,12 +44,15 @@ let package = Package(
             dependencies: ["Aquarium",
                            "CountriesCore",
                            "Countries",
-                           .product(name: "CountriesAPIContainers", package: "CountriesAPI")],
+                           .product(name: "CountriesAPIContainers", package: "CountriesAPI"),
+                           .product(name: "PelicanRepositories", package: "PelicanSwift"),
+                           .product(name: "PelicanProtocols", package: "PelicanSwift")],
             
             path: "Sources/Injections"),
         .target(
             name: "CountriesCore",
             dependencies: [.product(name: "CountriesAPI", package: "CountriesAPI"),
+                           .product(name: "PelicanProtocols", package: "PelicanSwift"),
                            .product(name: "QHValidator", package: "QHValidator")],
             
             path: "Sources/Core"),

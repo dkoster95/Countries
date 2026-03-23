@@ -11,15 +11,46 @@ import CountriesAPI
 import os
 import CountriesCore
 import Countries
+import PelicanRepositories
+import SwiftData
+
+
+public struct FindAllCountriesRepositoryFactory: FindAllCountriesRepositoryFactorizable {
+    private let modelContainer: ModelContainer
+    
+    public init(modelContainer: ModelContainer) {
+        self.modelContainer = modelContainer
+    }
+    
+    public func make() -> any FindAllCountriesRepository {
+        return SwiftDataRepository<CountryResponseDataTransformer>(modelContainer: modelContainer)
+    }
+    
+    
+}
 
 public struct Containers {
     public struct Core {
         public static func prod(environment: HostEnvironment) throws -> Aquarium {
-            let aquarium = Aquarium(containers: [.simple: SimpleContainer(logger: AquariumLoggerDefault())],
+            let aquarium = Aquarium(containers: [.simple: SimpleContainer(logger: AquariumLoggerDefault()),
+                                                 .singleton: SingletonContainer(logger: AquariumLoggerDefault())],
                                     aquariums: [try CountriesAPIContainers.prod(environment: environment)],
                                     logger: AquariumLoggerDefault())
+            try aquarium.register(dependencyType: ModelContainer.self,
+                                  registration: { container in
+                let config = ModelConfiguration(isStoredInMemoryOnly: true)
+                let container = try ModelContainer(for: EntityData.self, configurations: config)
+                return container
+            },
+                                  with: .singleton)
+            try aquarium.register(dependencyType: FindAllCountriesRepositoryFactorizable.self,
+                                  registration: { container in
+                return FindAllCountriesRepositoryFactory(modelContainer: try container.resolve())
+            },
+                                  with: .simple)
             try aquarium.register(dependencyType: (any FindAllCountriesDataProvidable).self,
-                                  registration: { container in FindAllCountriesDataProvider(webAPI: try container.resolve())},
+                                  registration: { container in FindAllCountriesDataProvider(webAPI: try container.resolve(),
+                                                                                            repositoryFactory: try container.resolve())},
                                   with: .simple)
             return aquarium
         }

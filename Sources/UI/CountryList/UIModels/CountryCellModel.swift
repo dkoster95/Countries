@@ -14,28 +14,8 @@ public struct CountryCellModel: Identifiable, Sendable {
     let image: String
 }
 
-@MainActor
-public protocol AsyncImageViewModelable: Sendable {
-    var data: Data? { get set }
-    func reload() async throws
-}
+
 
 public protocol ImageDataProvider: DataProvider<String, Data>, Sendable {}
 
-@Observable
-public class AsyncImageViewModel: AsyncImageViewModelable {
-    public var data: Data?
-    @ObservationIgnored private let url: String
-    @ObservationIgnored private let dataProvider: any ImageDataProvider
-    
-    public init(data: Data? = nil, dataProvider: any ImageDataProvider, url: String) {
-        self.data = data
-        self.dataProvider = dataProvider
-        self.url = url
-    }
-    
-    public func reload() async throws {
-        let imageData = try await dataProvider.execute(url)
-        self.data = imageData
-    }
-}
+
