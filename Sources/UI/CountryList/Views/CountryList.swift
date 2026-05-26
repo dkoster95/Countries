@@ -55,52 +55,6 @@ public struct CountryList: View {
     }
 }
 
-extension Image {
-    init?(data: Data) {
-        #if canImport(UIKit)
-        guard let uiImage = UIImage(data: data) else { return nil }
-        self = Image(uiImage: uiImage)
-        #elseif canImport(AppKit)
-        guard let nsImage = NSImage(data: data) else { return nil }
-        self = Image(nsImage: nsImage)
-        #else
-        return nil
-        #endif
-    }
-}
-
-struct CountryCell: View {
-    private let model: CountryCellModel
-    
-    init(model: CountryCellModel) {
-        self.model = model
-    }
-    
-    public var body: some View {
-        HStack(spacing: 16) {
-//            Image(model.image, bundle: .module)
-//                    .resizable()
-//                    .scaledToFit()
-//                    .frame(width: 60, height: 40)
-            AsyncImage(url: URL(string:model.image), scale: 1.0) { image in
-                image
-                    .resizable()
-                    .scaledToFit()
-                    // Add modifiers to the image itself
-            } placeholder: {
-                ProgressView() // Show a spinner while loading
-            }
-//                .resizable()
-//                .scaledToFit()
-                .frame(width: 60, height: 40)
-            VStack(alignment: .leading) {
-                Text(model.name).font(Font.title)
-                Text(model.detail).font(Font.headline).foregroundStyle(Color.gray)
-            }
-        }
-    }
-}
-
 #Preview {
     CountryList(viewModel: CountryListViewModel2())
 }

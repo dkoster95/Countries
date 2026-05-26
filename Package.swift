@@ -23,10 +23,12 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/dkoster95/CountriesAPI", branch: "main"),
-        .package(url: "https://github.com/dkoster95/PelicanSwift.git", from: "3.1.0"),
+        .package(url: "https://github.com/dkoster95/PelicanSwift.git", from: "3.1.1"),
         .package(url: "https://github.com/dkoster95/Aquarium.git",
-                 from: "1.0.2"),
+                 from: "1.0.3"),
         .package(url: "https://github.com/dkoster95/QHValidator.git",
+                 from: "1.0.0"),
+        .package(url: "https://github.com/dkoster95/QuickHatchCore.git",
                  from: "1.0.0")
     ],
     targets: [
@@ -34,7 +36,7 @@ let package = Package(
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "Countries",
-            dependencies: ["CountriesCore"],
+            dependencies: ["CountriesCore", "QuickHatchCore"],
             path: "Sources/UI",
             resources: [
                 .process("Resources") // Processes all resources within the 'Resources' folder
@@ -44,6 +46,7 @@ let package = Package(
             dependencies: ["Aquarium",
                            "CountriesCore",
                            "Countries",
+                           "QuickHatchCore",
                            .product(name: "CountriesAPIContainers", package: "CountriesAPI"),
                            .product(name: "PelicanRepositories", package: "PelicanSwift"),
                            .product(name: "PelicanProtocols", package: "PelicanSwift")],

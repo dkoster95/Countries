@@ -13,6 +13,8 @@ import CountriesCore
 import Countries
 import PelicanRepositories
 import SwiftData
+import PelicanProtocols
+import QuickHatchCore
 
 
 public struct FindAllCountriesRepositoryFactory: FindAllCountriesRepositoryFactorizable {
@@ -25,7 +27,6 @@ public struct FindAllCountriesRepositoryFactory: FindAllCountriesRepositoryFacto
     public func make() -> any FindAllCountriesRepository {
         return SwiftDataRepository<CountryResponseDataTransformer>(modelContainer: modelContainer)
     }
-    
     
 }
 
@@ -52,6 +53,16 @@ public struct Containers {
                                   registration: { container in FindAllCountriesDataProvider(webAPI: try container.resolve(),
                                                                                             repositoryFactory: try container.resolve())},
                                   with: .simple)
+            
+            // MARK: Injecting Cache
+            try aquarium.register(dependencyType: Cache.self,
+                                  registration: { _ in FileCache(policies: [])},
+                                  with: .simple)
+            
+            // MARK: Injecting Image Data Provider
+            try aquarium.register(dependencyType: (any FindImageDataProvidable).self,
+                                  registration: { FindImageDataProvider(webAPI: try $0.resolve(), cache: try $0.resolve())},
+                                  with: .simple)
             return aquarium
         }
     }
@@ -64,11 +75,15 @@ public struct Containers {
                                     logger: AquariumLoggerDefault())
             
             try aquarium.register(dependencyType: CountryListViewModel.self,
-                              registration: { container in CountryListViewModel1(dataProvider: try container.resolve())},
-                              with: .simple)
+                                  registration: { container in CountryListViewModel1(dataProvider: try container.resolve(),
+                                                                                     cellModelFactory: try container.resolve()) },
+                                  with: .simple)
             
             try aquarium.register(dependencyType: CountryList.self,
                                   registration: { container in CountryList(viewModel: try container.resolve())},
+                                  with: .simple)
+            try aquarium.register(dependencyType: CountryCellModelFactory.self,
+                                  registration: { AquariumCountryCellModelFactory(dataProvider: try $0.resolve()) },
                                   with: .simple)
             
             return aquarium

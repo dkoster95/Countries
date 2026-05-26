@@ -9,6 +9,7 @@ import CountriesCore
 import CountriesAPI
 import Combine
 import OSLog
+import PelicanRepositories
 
 @MainActor
 public protocol CountryListViewModel: Sendable {
@@ -33,9 +34,12 @@ public class CountryListViewModel1: CountryListViewModel {
     private var cancellables = Set<AnyCancellable>()
     @ObservationIgnored
     private let logger = Logger(subsystem: "CountriesUI", category: "CountryList")
+    private let cellModelFactory: CountryCellModelFactory
     
-    public init(dataProvider: (any FindAllCountriesDataProvidable)) {
+    public init(dataProvider: (any FindAllCountriesDataProvidable),
+                cellModelFactory: CountryCellModelFactory) {
         self.dataProvider = dataProvider
+        self.cellModelFactory = cellModelFactory
         configureSearch()
     }
     
@@ -56,13 +60,15 @@ public class CountryListViewModel1: CountryListViewModel {
         logger.debug("\(Thread.current) Reloading countries")
         if let countries = try? await dataProvider.execute(searchText) {
             logger.debug("\(Thread.current) - \(countries.count) Countries found, proceeding to map into cellModels")
-            let cellModelsMapped = countries.map { CountryCellModel(name: $0.name?.common ?? "",
-                                                                    detail: ($0.subregion ?? "") + ", " + ($0.region ?? ""),
-                                                                    image: $0.flags?.png ?? "") }
-            
+            let cellModelsMapped = countries.map { cellModelFactory.make(country: $0) }
             cellModels = cellModelsMapped
             
         }
+    }
+    
+    private func detailText(country: CountryResponse) -> String {
+        let regions = [country.region, country.subregion].compactMap { $0 }.filter { !$0.isEmpty}
+        return regions.joined(separator: ", ")
     }
     
 //

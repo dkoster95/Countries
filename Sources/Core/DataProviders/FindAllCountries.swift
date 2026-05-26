@@ -11,26 +11,7 @@ import QHValidator
 import SwiftData
 import os
 import PelicanProtocols
-
-class DataProviderThing {
-    let repo: Repo<SuperModel>
-    
-    init(repo: Repo<SuperModel>) {
-        self.repo = repo
-    }
-}
-
-protocol SaveRepo {
-    func save(element: Data)
-}
-//
-//@ModelActor actor SaveRepoSwiftData: SaveRepo {
-//    nonisolated func save(element: Data) {
-//        <#code#>
-//    }
-//}
-
-
+import QuickHatchCore
 
 @Model
 public class EntityData {
@@ -87,33 +68,6 @@ public struct EntityDataTransformer<Item: Codable & Equatable & Sendable>: Persi
     
 }
 
-@Model
-class SuperModel {
-    var name: String
-    
-    init(name: String) {
-        self.name = name
-    }
-}
-
-class Repo<T: PersistentModel> {
-    let modelContainer: ModelContext
-    
-    init(modelContainer: ModelContext) {
-        self.modelContainer = modelContainer
-    }
-    
-    func save(element: T) {
-        modelContainer.insert(element)
-    }
-}
-
-public protocol DataProvider<Input, Result>: Sendable {
-    associatedtype Input: Sendable
-    associatedtype Result: Sendable
-    func execute(_ input: Input) async throws -> Result
-}
-
 public protocol FindAllCountriesDataProvidable: DataProvider<String, [CountryResponse]> {}
 
 public typealias CountryResponseDataTransformer = EntityDataTransformer<CountryResponse>
@@ -143,17 +97,17 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
             let savedCountries = await repository.find()
             if !savedCountries.isEmpty {
                 logger.debug("\(Thread.current) - returning saved countries")
-                return savedCountries.map { $0.item }
+                return savedCountries.map { $0.item }.sorted { $0.name?.common ?? "" < $1.name?.common ?? "" }
             }
             let response = try await webAPI.find()
             let transformedResponse = response.map { EntityDataTransformer(item: $0) }
             try await repository.add(elements: transformedResponse)
             logger.debug("\(Thread.current) - added all elements")
-            return response
+            return response.sorted { $0.name?.common ?? "" < $1.name?.common ?? "" }
         }
         // validate the input
         logger.info("\(Thread.current)Searching countries by Input: \(input)")
-        return try await webAPI.find(byName: input)
+        return try await webAPI.find(byName: input).sorted { $0.name?.common ?? "" < $1.name?.common ?? "" }
         //validate the output
     }
 }
