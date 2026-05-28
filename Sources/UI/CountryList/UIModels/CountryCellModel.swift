@@ -6,6 +6,7 @@
 //
 import Foundation
 import CountriesCore
+import QuickHatchUI
 
 public struct CountryCellModel: Identifiable, Sendable {
     public var id: String { name }
@@ -19,9 +20,3 @@ public struct CountryCellModel: Identifiable, Sendable {
         self.imageViewModel = imageViewModel
     }
 }
-
-
-
-public protocol ImageDataProvider: DataProvider<String, Data>, Sendable {}
-
-

@@ -6,6 +6,7 @@
 //
 import Foundation
 import SwiftUI
+import QuickHatchUI
 
 struct CountryCell: View {
     private let model: CountryCellModel

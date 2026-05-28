@@ -8,6 +8,7 @@ import CountriesAPI
 import Foundation
 import CountriesCore
 import QuickHatchCore
+import QuickHatchUI
 
 @MainActor
 public protocol CountryCellModelFactory {

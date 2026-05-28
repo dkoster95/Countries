@@ -29,14 +29,15 @@ let package = Package(
         .package(url: "https://github.com/dkoster95/QHValidator.git",
                  from: "1.0.0"),
         .package(url: "https://github.com/dkoster95/QuickHatchCore.git",
-                 from: "1.0.0")
+                 from: "1.0.0"),
+        .package(url: "https://github.com/dkoster95/QuickHatchUI.git", from: "1.0.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "Countries",
-            dependencies: ["CountriesCore", "QuickHatchCore"],
+            dependencies: ["CountriesCore", "QuickHatchCore", "QuickHatchUI"],
             path: "Sources/UI",
             resources: [
                 .process("Resources") // Processes all resources within the 'Resources' folder
@@ -47,6 +48,7 @@ let package = Package(
                            "CountriesCore",
                            "Countries",
                            "QuickHatchCore",
+                           "QuickHatchUI",
                            .product(name: "CountriesAPIContainers", package: "CountriesAPI"),
                            .product(name: "PelicanRepositories", package: "PelicanSwift"),
                            .product(name: "PelicanProtocols", package: "PelicanSwift")],
