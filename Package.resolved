@@ -1,13 +1,13 @@
 {
-  "originHash" : "3708574027e9543376de4c48fbca1c160975a37d14e47049b3d93b03ff01c8e4",
+  "originHash" : "6a4823cb6a9f1e5cf15cc90127e2b6d7bf7b22828a2bc861e289c4fde1bf500a",
   "pins" : [
     {
       "identity" : "aquarium",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/dkoster95/Aquarium.git",
       "state" : {
-        "revision" : "7b470ef8cffc54a6c56dbb51287f03eb9d382d57",
-        "version" : "1.0.2"
+        "revision" : "08e7860c73e3dece6a2dbd6eb83f05dcc38b9d22",
+        "version" : "1.0.3"
       }
     },
     {
@@ -16,7 +16,16 @@
       "location" : "https://github.com/dkoster95/CountriesAPI",
       "state" : {
         "branch" : "main",
-        "revision" : "eacec069552a539f3e75bd60d6aefc59b115a51b"
+        "revision" : "ead9eb8b35d53e3ad0e9072b94e5575b56c8a960"
+      }
+    },
+    {
+      "identity" : "pelicanswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dkoster95/PelicanSwift.git",
+      "state" : {
+        "revision" : "5fb8d588edc94bf4c475abca8587d4cb09558361",
+        "version" : "3.1.1"
       }
     },
     {
@@ -29,12 +38,30 @@
       }
     },
     {
+      "identity" : "quickhatchcore",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dkoster95/QuickHatchCore.git",
+      "state" : {
+        "revision" : "9bf3e99177f177414d90fe3fb2509a3afc0bb40b",
+        "version" : "1.0.0"
+      }
+    },
+    {
       "identity" : "quickhatchhttp",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/dkoster95/QuickHatchHTTP.git",
       "state" : {
-        "revision" : "81e0e265c64304b5e9aff702e0434502e63bcf9d",
-        "version" : "1.0.1"
+        "revision" : "696456d7fec4f2ff5a47d03923f190c29203df64",
+        "version" : "1.0.2"
+      }
+    },
+    {
+      "identity" : "quickhatchui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dkoster95/QuickHatchUI.git",
+      "state" : {
+        "revision" : "d1f6585db40a07b0e034e16b8ef195ff028bd17a",
+        "version" : "1.0.0"
       }
     }
   ],

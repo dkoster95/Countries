@@ -56,7 +56,8 @@ let package = Package(
             path: "Sources/Injections"),
         .target(
             name: "CountriesCore",
-            dependencies: [.product(name: "CountriesAPI", package: "CountriesAPI"),
+            dependencies: ["QuickHatchCore",
+                           .product(name: "CountriesAPI", package: "CountriesAPI"),
                            .product(name: "PelicanProtocols", package: "PelicanSwift"),
                            .product(name: "QHValidator", package: "QHValidator")],
             
