@@ -68,13 +68,15 @@ public struct EntityDataTransformer<Item: Codable & Equatable & Sendable>: Persi
     
 }
 
-public protocol FindAllCountriesDataProvidable: DataProvider<String, [CountryResponse]> {}
+public protocol FindAllCountriesDataProvidable: DataProvider<String, [Country]> {}
 
 public typealias CountryResponseDataTransformer = EntityDataTransformer<CountryResponse>
 public typealias FindAllCountriesRepository = AsyncReadableRepository<CountryResponseDataTransformer> &  AsyncBatchRepository<CountryResponseDataTransformer>
 
+public typealias FindAllCountriesRepositoryProtocol = AsyncReadableRepository<Country> & AsyncBatchRepository<Country>
+
 public protocol FindAllCountriesRepositoryFactorizable: Sendable {
-    func make() -> any FindAllCountriesRepository
+    func make() -> any FindAllCountriesRepositoryProtocol
 }
 
 
@@ -89,7 +91,7 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
         self.repositoryFactory = repositoryFactory
     }
     
-    public func execute(_ input: String) async throws -> [CountriesAPI.CountryResponse] {
+    public func execute(_ input: String) async throws -> [Country] {
         if input.isEmpty {
             logger.debug("\(Thread.current) - no input, finding all countries")
             let repository = repositoryFactory.make()
@@ -97,17 +99,20 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
             let savedCountries = await repository.find()
             if !savedCountries.isEmpty {
                 logger.debug("\(Thread.current) - returning saved countries")
-                return savedCountries.map { $0.item }.sorted { $0.name?.common ?? "" < $1.name?.common ?? "" }
+                return savedCountries.sorted { $0.name < $1.name }
             }
             let response = try await webAPI.find()
-            let transformedResponse = response.map { EntityDataTransformer(item: $0) }
+            let transformedResponse = response.compactMap { $0.asCountry }
+            logger.info("\(transformedResponse.count) valid countries mapped")
             try await repository.add(elements: transformedResponse)
             logger.debug("\(Thread.current) - added all elements")
-            return response.sorted { $0.name?.common ?? "" < $1.name?.common ?? "" }
+            return transformedResponse.sorted { $0.name < $1.name }
         }
         // validate the input
         logger.info("\(Thread.current)Searching countries by Input: \(input)")
-        return try await webAPI.find(byName: input).sorted { $0.name?.common ?? "" < $1.name?.common ?? "" }
+        return try await webAPI.find(byName: input)
+            .compactMap { $0.asCountry }
+            .sorted { $0.name < $1.name }
         //validate the output
     }
 }

@@ -24,8 +24,8 @@ public struct FindAllCountriesRepositoryFactory: FindAllCountriesRepositoryFacto
         self.modelContainer = modelContainer
     }
     
-    public func make() -> any FindAllCountriesRepository {
-        return SwiftDataRepository<CountryResponseDataTransformer>(modelContainer: modelContainer)
+    public func make() -> any FindAllCountriesRepositoryProtocol {
+        return SwiftDataRepository<Country>(modelContainer: modelContainer)
     }
     
 }
@@ -39,8 +39,15 @@ public struct Containers {
                                     logger: AquariumLoggerDefault())
             try aquarium.register(dependencyType: ModelContainer.self,
                                   registration: { container in
-                let config = ModelConfiguration(isStoredInMemoryOnly: true)
-                let container = try ModelContainer(for: EntityData.self, configurations: config)
+                let schema = Schema(versionedSchema: CountriesSchemaV1.self)
+                let config = ModelConfiguration(
+                    "ProductionStore",
+                    schema: schema,
+                    isStoredInMemoryOnly: true,
+                    allowsSave: true
+                )
+//                let config = ModelConfiguration(isStoredInMemoryOnly: true)
+                let container = try ModelContainer(for: schema, configurations: [config])
                 return container
             },
                                   with: .singleton)

@@ -50,7 +50,7 @@ public class CountryListViewModel1: CountryListViewModel {
                         guard let self = self else { return }
                         print("Debounced query: \(self.searchText)")
                         Task {
-                            try await reload()
+                            await reload()
                         }
                     }
                     .store(in: &cancellables)
