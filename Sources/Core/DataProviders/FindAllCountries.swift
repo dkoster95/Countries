@@ -70,13 +70,10 @@ public struct EntityDataTransformer<Item: Codable & Equatable & Sendable>: Persi
 
 public protocol FindAllCountriesDataProvidable: DataProvider<String, [Country]> {}
 
-public typealias CountryResponseDataTransformer = EntityDataTransformer<CountryResponse>
-public typealias FindAllCountriesRepository = AsyncReadableRepository<CountryResponseDataTransformer> &  AsyncBatchRepository<CountryResponseDataTransformer>
-
-public typealias FindAllCountriesRepositoryProtocol = AsyncReadableRepository<Country> & AsyncBatchRepository<Country>
+public typealias FindAllCountriesRepository = AsyncReadableRepository<Country> & AsyncBatchRepository<Country>
 
 public protocol FindAllCountriesRepositoryFactorizable: Sendable {
-    func make() -> any FindAllCountriesRepositoryProtocol
+    func make() -> any FindAllCountriesRepository
 }
 
 

@@ -24,7 +24,7 @@ public struct FindAllCountriesRepositoryFactory: FindAllCountriesRepositoryFacto
         self.modelContainer = modelContainer
     }
     
-    public func make() -> any FindAllCountriesRepositoryProtocol {
+    public func make() -> any FindAllCountriesRepository {
         return SwiftDataRepository<Country>(modelContainer: modelContainer)
     }
     
