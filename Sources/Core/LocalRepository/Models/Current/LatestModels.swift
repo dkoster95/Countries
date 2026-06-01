@@ -6,3 +6,4 @@
 //
 
 public typealias CountryEntity = CountriesSchemaV1.CountryEntity
+public typealias SyncStatusEntity = CountriesSchemaV1.SyncStatusEntity

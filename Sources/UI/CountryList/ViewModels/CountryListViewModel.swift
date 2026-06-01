@@ -48,7 +48,7 @@ public class CountryListViewModel1: CountryListViewModel {
                     .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
                     .sink { [weak self] debouncedQuery in
                         guard let self = self else { return }
-                        print("Debounced query: \(self.searchText)")
+                        logger.debug("Debounced query: \(self.searchText)")
                         Task {
                             await reload()
                         }

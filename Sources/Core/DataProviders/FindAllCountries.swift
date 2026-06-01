@@ -71,9 +71,11 @@ public struct EntityDataTransformer<Item: Codable & Equatable & Sendable>: Persi
 public protocol FindAllCountriesDataProvidable: DataProvider<String, [Country]> {}
 
 public typealias FindAllCountriesRepository = AsyncReadableRepository<Country> & AsyncBatchRepository<Country>
+public typealias SyncStatusRepository = AsyncReadableRepository<SyncStatus> & AsyncInsertableRepository<SyncStatus> & AsyncUpdatableRepository<SyncStatus>
 
 public protocol FindAllCountriesRepositoryFactorizable: Sendable {
     func make() -> any FindAllCountriesRepository
+    func makeSyncStatus() -> any SyncStatusRepository
 }
 
 
@@ -90,26 +92,36 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
     
     public func execute(_ input: String) async throws -> [Country] {
         if input.isEmpty {
-            logger.debug("\(Thread.current) - no input, finding all countries")
-            let repository = repositoryFactory.make()
-            logger.debug("\(Thread.current) - repository created")
-            let savedCountries = await repository.find()
-            if !savedCountries.isEmpty {
-                logger.debug("\(Thread.current) - returning saved countries")
-                return savedCountries.sorted { $0.name < $1.name }
-            }
-            let response = try await webAPI.find()
-            let transformedResponse = response.compactMap { $0.asCountry }
-            logger.info("\(transformedResponse.count) valid countries mapped")
-            try await repository.add(elements: transformedResponse)
-            logger.debug("\(Thread.current) - added all elements")
-            return transformedResponse.sorted { $0.name < $1.name }
+            return try await findAll()
         }
+        return try await search(input: input)
+    }
+    
+    private func search(input: String) async throws -> [Country] {
         // validate the input
         logger.info("\(Thread.current)Searching countries by Input: \(input)")
         return try await webAPI.find(byName: input)
             .compactMap { $0.asCountry }
             .sorted { $0.name < $1.name }
         //validate the output
+    }
+    
+    private func findAll() async throws -> [Country] {
+        logger.debug("\(Thread.current) - finding all countries")
+        let repository = repositoryFactory.make()
+        logger.debug("\(Thread.current) - repository created")
+        let savedCountries = await repository.find()
+        if !savedCountries.isEmpty {
+            logger.debug("\(Thread.current) - returning saved countries")
+            return savedCountries.sorted { $0.name < $1.name }
+        }
+        logger.debug("\(Thread.current) - No data saved, downloading all countries")
+        let response = try await webAPI.find()
+        logger.debug("\(response.count) - Country responses downloaded")
+        let transformedResponse = response.compactMap { $0.asCountry }
+        logger.info("\(transformedResponse.count) valid countries detected")
+        try await repository.add(elements: transformedResponse)
+        logger.debug("\(Thread.current) - added all elements")
+        return transformedResponse.sorted { $0.name < $1.name }
     }
 }

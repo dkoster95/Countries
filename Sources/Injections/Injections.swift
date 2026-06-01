@@ -28,6 +28,10 @@ public struct FindAllCountriesRepositoryFactory: FindAllCountriesRepositoryFacto
         return SwiftDataRepository<Country>(modelContainer: modelContainer)
     }
     
+    public func makeSyncStatus() -> any SyncStatusRepository {
+        return SwiftDataRepository<SyncStatus>(modelContainer: modelContainer)
+    }
+    
 }
 
 public struct Containers {

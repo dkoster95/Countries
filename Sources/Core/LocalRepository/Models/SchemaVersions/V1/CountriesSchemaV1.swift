@@ -13,7 +13,7 @@ public enum CountriesSchemaV1: VersionedSchema {
         Schema.Version(1, 0, 0)
     }
     public static var models: [any PersistentModel.Type] {
-        [CountryEntity.self]
+        [CountryEntity.self, SyncStatusEntity.self]
     }
 }
 
