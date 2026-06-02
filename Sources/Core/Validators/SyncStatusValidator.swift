@@ -8,7 +8,7 @@
 import Foundation
 import QHValidator
 
-public protocol SyncStatusValidator {
+public protocol SyncStatusValidator: Sendable {
     func isValid(syncStatus: SyncStatus) -> Bool
 }
 
@@ -51,6 +51,8 @@ extension Validator where Input == SyncStatus {
 
 public struct CountriesExpirationSyncStatusValidator: SyncStatusValidator {
     private let validator = Validator<SyncStatus>().createdWithinLast(hours: 12)
+    
+    public init() {}
     
     public func isValid(syncStatus: SyncStatus) -> Bool {
         ((try? validator.validate(value: syncStatus)) != nil)

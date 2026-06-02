@@ -1,5 +1,5 @@
 {
-  "originHash" : "6a4823cb6a9f1e5cf15cc90127e2b6d7bf7b22828a2bc861e289c4fde1bf500a",
+  "originHash" : "64ed728c7190cb600d8d48422893e8274e1e337256b3ec81f4def6669ddbc735",
   "pins" : [
     {
       "identity" : "aquarium",
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/dkoster95/QHValidator.git",
       "state" : {
-        "revision" : "aa235682f4167775c3708c2f6b163a6e0552b5b6",
-        "version" : "1.0.0"
+        "revision" : "947dd093bf308ac8b7addf3a91a8d7ad530ff384",
+        "version" : "1.0.1"
       }
     },
     {

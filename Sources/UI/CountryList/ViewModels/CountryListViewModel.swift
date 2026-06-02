@@ -33,7 +33,7 @@ public class CountryListViewModel1: CountryListViewModel {
     @ObservationIgnored
     private var cancellables = Set<AnyCancellable>()
     @ObservationIgnored
-    private let logger = Logger(subsystem: "CountriesUI", category: "CountryList")
+    private let logger = Logger(subsystem: "Countries.UI", category: "CountryList")
     private let cellModelFactory: CountryCellModelFactory
     
     public init(dataProvider: (any FindAllCountriesDataProvidable),

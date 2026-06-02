@@ -76,19 +76,21 @@ public typealias SyncStatusRepository = AsyncReadableRepository<SyncStatus> & As
 public protocol FindAllCountriesRepositoryFactorizable: Sendable {
     func make() -> any FindAllCountriesRepository
     func makeSyncStatus() -> any SyncStatusRepository
-    func makePolicy() -> (Date) -> Bool
 }
 
 
 public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Sendable {
     private let webAPI: AsyncCountryAPI
-    private let logger = Logger(subsystem: "CountriesCore", category: "FindAllCountriesDataProvider")
+    private let logger = Logger(subsystem: "Countries.Core", category: "FindAllCountriesDataProvider")
     private let repositoryFactory: FindAllCountriesRepositoryFactorizable
+    private let validator: SyncStatusValidator
     
     public init(webAPI: AsyncCountryAPI,
-                repositoryFactory: FindAllCountriesRepositoryFactorizable) {
+                repositoryFactory: FindAllCountriesRepositoryFactorizable,
+                validator: SyncStatusValidator) {
         self.webAPI = webAPI
         self.repositoryFactory = repositoryFactory
+        self.validator = validator
     }
     
     public func execute(_ input: String) async throws -> [Country] {
@@ -117,8 +119,7 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
         if let countriesSyncStatus = await syncStatusRepository.find (query: { $0.name == SyncableEntities.countries.rawValue }).first {
             // check expiration date for sync status
             logger.info("Sync status for \(SyncableEntities.countries.rawValue) found!")
-            let policy = repositoryFactory.makePolicy()
-            if policy(countriesSyncStatus.createdAt) {
+            if validator.isValid(syncStatus: countriesSyncStatus) {
                 let savedCountries = await repository.find()
                 if !savedCountries.isEmpty {
                     logger.debug("\(Thread.current) - returning saved countries")

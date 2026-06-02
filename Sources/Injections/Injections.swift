@@ -31,22 +31,6 @@ public struct FindAllCountriesRepositoryFactory: FindAllCountriesRepositoryFacto
     public func makeSyncStatus() -> any SyncStatusRepository {
         return SwiftDataRepository<SyncStatus>(modelContainer: modelContainer)
     }
-    
-    public func makePolicy() -> (Date) -> Bool {
-        return { date in
-            isWithinLast12Hours(date: date)
-        }
-    }
-    
-    func isWithinLast12Hours(date: Date) -> Bool {
-        // 12 hours converted to seconds (12 * 60 * 60)
-//        let twelveHoursAgo = Date().addingTimeInterval(-43200)
-        let twelveHoursAgo = Date().addingTimeInterval(-60)
-        let currentRange = twelveHoursAgo...Date()
-        
-        return currentRange.contains(date)
-    }
-    
 }
 
 public struct Containers {
@@ -70,14 +54,19 @@ public struct Containers {
                 return container
             },
                                   with: .singleton)
+            // MARK: Injecting FindAllCountries DataProvider
             try aquarium.register(dependencyType: FindAllCountriesRepositoryFactorizable.self,
                                   registration: { container in
                 return FindAllCountriesRepositoryFactory(modelContainer: try container.resolve())
             },
                                   with: .simple)
+            try aquarium.register(dependencyType: SyncStatusValidator.self,
+                                  registration: { _ in CountriesExpirationSyncStatusValidator() },
+                                  with: .simple)
             try aquarium.register(dependencyType: (any FindAllCountriesDataProvidable).self,
                                   registration: { container in FindAllCountriesDataProvider(webAPI: try container.resolve(),
-                                                                                            repositoryFactory: try container.resolve())},
+                                                                                            repositoryFactory: try container.resolve(),
+                                                                                            validator: try container.resolve())},
                                   with: .simple)
             
             // MARK: Injecting Cache

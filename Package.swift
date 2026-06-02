@@ -27,7 +27,7 @@ let package = Package(
         .package(url: "https://github.com/dkoster95/Aquarium.git",
                  from: "1.0.3"),
         .package(url: "https://github.com/dkoster95/QHValidator.git",
-                 from: "1.0.0"),
+                 from: "1.0.1"),
         .package(url: "https://github.com/dkoster95/QuickHatchCore.git",
                  from: "1.0.0"),
         .package(url: "https://github.com/dkoster95/QuickHatchUI.git", from: "1.0.0")
