@@ -32,6 +32,21 @@ public struct FindAllCountriesRepositoryFactory: FindAllCountriesRepositoryFacto
         return SwiftDataRepository<SyncStatus>(modelContainer: modelContainer)
     }
     
+    public func makePolicy() -> (Date) -> Bool {
+        return { date in
+            isWithinLast12Hours(date: date)
+        }
+    }
+    
+    func isWithinLast12Hours(date: Date) -> Bool {
+        // 12 hours converted to seconds (12 * 60 * 60)
+//        let twelveHoursAgo = Date().addingTimeInterval(-43200)
+        let twelveHoursAgo = Date().addingTimeInterval(-60)
+        let currentRange = twelveHoursAgo...Date()
+        
+        return currentRange.contains(date)
+    }
+    
 }
 
 public struct Containers {

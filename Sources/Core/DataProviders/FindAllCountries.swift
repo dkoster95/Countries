@@ -70,12 +70,13 @@ public struct EntityDataTransformer<Item: Codable & Equatable & Sendable>: Persi
 
 public protocol FindAllCountriesDataProvidable: DataProvider<String, [Country]> {}
 
-public typealias FindAllCountriesRepository = AsyncReadableRepository<Country> & AsyncBatchRepository<Country>
+public typealias FindAllCountriesRepository = AsyncReadableRepository<Country> & AsyncBatchRepository<Country> & AsyncDeleteableRepository<Country>
 public typealias SyncStatusRepository = AsyncReadableRepository<SyncStatus> & AsyncInsertableRepository<SyncStatus> & AsyncUpdatableRepository<SyncStatus>
 
 public protocol FindAllCountriesRepositoryFactorizable: Sendable {
     func make() -> any FindAllCountriesRepository
     func makeSyncStatus() -> any SyncStatusRepository
+    func makePolicy() -> (Date) -> Bool
 }
 
 
@@ -108,12 +109,26 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
     
     private func findAll() async throws -> [Country] {
         logger.debug("\(Thread.current) - finding all countries")
+        
         let repository = repositoryFactory.make()
+        let syncStatusRepository = repositoryFactory.makeSyncStatus()
         logger.debug("\(Thread.current) - repository created")
-        let savedCountries = await repository.find()
-        if !savedCountries.isEmpty {
-            logger.debug("\(Thread.current) - returning saved countries")
-            return savedCountries.sorted { $0.name < $1.name }
+        logger.info("Finding sync status for \(SyncableEntities.countries.rawValue)")
+        if let countriesSyncStatus = await syncStatusRepository.find (query: { $0.name == SyncableEntities.countries.rawValue }).first {
+            // check expiration date for sync status
+            logger.info("Sync status for \(SyncableEntities.countries.rawValue) found!")
+            let policy = repositoryFactory.makePolicy()
+            if policy(countriesSyncStatus.createdAt) {
+                let savedCountries = await repository.find()
+                if !savedCountries.isEmpty {
+                    logger.debug("\(Thread.current) - returning saved countries")
+                    return savedCountries.sorted { $0.name < $1.name }
+                }
+            } else {
+                logger.info("Storage expiration reached proceeding to remove all countries")
+                try await repository.deleteAll()
+                logger.info("All countries deleted")
+            }
         }
         logger.debug("\(Thread.current) - No data saved, downloading all countries")
         let response = try await webAPI.find()
@@ -122,6 +137,9 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
         logger.info("\(transformedResponse.count) valid countries detected")
         try await repository.add(elements: transformedResponse)
         logger.debug("\(Thread.current) - added all elements")
+        let syncStatus = SyncStatus(name: SyncableEntities.countries.rawValue)
+        _ = try await syncStatusRepository.add(element: syncStatus)
+        logger.info("Sync status updated")
         return transformedResponse.sorted { $0.name < $1.name }
     }
 }
