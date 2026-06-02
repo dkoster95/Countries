@@ -42,16 +42,7 @@ public struct Containers {
                                     logger: AquariumLoggerDefault())
             try aquarium.register(dependencyType: ModelContainer.self,
                                   registration: { container in
-                let schema = Schema(versionedSchema: CountriesSchemaV1.self)
-                let config = ModelConfiguration(
-                    "ProductionStore",
-                    schema: schema,
-                    isStoredInMemoryOnly: true,
-                    allowsSave: true
-                )
-//                let config = ModelConfiguration(isStoredInMemoryOnly: true)
-                let container = try ModelContainer(for: schema, configurations: [config])
-                return container
+                try countriesModelContainer()
             },
                                   with: .singleton)
             // MARK: Injecting FindAllCountries DataProvider

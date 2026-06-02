@@ -66,5 +66,10 @@ let package = Package(
             name: "CountriesTests",
             dependencies: ["Countries"]
         ),
+        .testTarget(
+            name: "CountriesCoreTests",
+            dependencies: ["CountriesCore"],
+            path: "Tests/Core"
+        ),
     ]
 )
