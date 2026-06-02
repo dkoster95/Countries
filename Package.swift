@@ -37,7 +37,7 @@ let package = Package(
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "Countries",
-            dependencies: ["CountriesCore", "QuickHatchCore", "QuickHatchUI"],
+            dependencies: ["CountriesCore", "QuickHatchCore", "QuickHatchUI", "QHValidator"],
             path: "Sources/UI",
             resources: [
                 .process("Resources") // Processes all resources within the 'Resources' folder
