@@ -1,5 +1,5 @@
 {
-  "originHash" : "64ed728c7190cb600d8d48422893e8274e1e337256b3ec81f4def6669ddbc735",
+  "originHash" : "4a217ab181e46bdcc75d012e284f8f5af37777bfeedd6702a28dab194a4e68a6",
   "pins" : [
     {
       "identity" : "aquarium",
@@ -16,7 +16,7 @@
       "location" : "https://github.com/dkoster95/CountriesAPI",
       "state" : {
         "branch" : "main",
-        "revision" : "ead9eb8b35d53e3ad0e9072b94e5575b56c8a960"
+        "revision" : "4548e11451afb1451f4f572fb09f1a6a80ff399e"
       }
     },
     {

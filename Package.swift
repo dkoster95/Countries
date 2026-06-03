@@ -62,13 +62,17 @@ let package = Package(
                            .product(name: "QHValidator", package: "QHValidator")],
             
             path: "Sources/Core"),
-        .testTarget(
-            name: "CountriesTests",
-            dependencies: ["Countries"]
-        ),
+        .target(
+            name: "CountriesMock",
+            dependencies: ["QuickHatchCore", "QuickHatchUI",
+                           .product(name: "CountriesAPI", package: "CountriesAPI"),
+                           .product(name: "PelicanProtocols", package: "PelicanSwift"),
+                           .product(name: "QHValidator", package: "QHValidator")],
+            
+            path: "Tests/Mocks"),
         .testTarget(
             name: "CountriesCoreTests",
-            dependencies: ["CountriesCore"],
+            dependencies: ["CountriesCore", "CountriesMock"],
             path: "Tests/Core"
         ),
     ]

@@ -94,13 +94,16 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
     }
     
     public func execute(_ input: String) async throws -> [Country] {
+        try Task.checkCancellation()
         if input.isEmpty {
             return try await findAll()
         }
         return try await search(input: input)
     }
+
     
     private func search(input: String) async throws -> [Country] {
+        try Task.checkCancellation()
         // validate the input
         logger.info("\(Thread.current)Searching countries by Input: \(input)")
         return try await webAPI.find(byName: input)
@@ -110,6 +113,7 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
     }
     
     private func findAll() async throws -> [Country] {
+        try Task.checkCancellation()
         logger.debug("\(Thread.current) - finding all countries")
         
         let repository = repositoryFactory.make()
@@ -131,6 +135,7 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
                 logger.info("All countries deleted")
             }
         }
+        try Task.checkCancellation()
         logger.debug("\(Thread.current) - No data saved, downloading all countries")
         let response = try await webAPI.find()
         logger.debug("\(response.count) - Country responses downloaded")
