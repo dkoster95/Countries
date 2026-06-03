@@ -55,6 +55,7 @@ public struct CountriesExpirationSyncStatusValidator: SyncStatusValidator {
     public init() {}
     
     public func isValid(syncStatus: SyncStatus) -> Bool {
-        ((try? validator.validate(value: syncStatus)) != nil)
+        guard let validation = try? validator.validate(value: syncStatus) else { return false }
+        return validation
     }
 }
