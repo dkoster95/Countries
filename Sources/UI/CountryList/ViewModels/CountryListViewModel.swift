@@ -35,6 +35,7 @@ public class CountryListViewModel1: CountryListViewModel {
     @ObservationIgnored
     private let logger = Logger(subsystem: "Countries.UI", category: "CountryList")
     private let cellModelFactory: CountryCellModelFactory
+    var searchTask: Task<Void, Never>?
     
     public init(dataProvider: (any FindAllCountriesDataProvidable),
                 cellModelFactory: CountryCellModelFactory) {
@@ -49,7 +50,8 @@ public class CountryListViewModel1: CountryListViewModel {
                     .sink { [weak self] debouncedQuery in
                         guard let self = self else { return }
                         logger.debug("Debounced query: \(self.searchText)")
-                        Task {
+                        searchTask?.cancel()
+                        searchTask = Task {
                             await reload()
                         }
                     }
