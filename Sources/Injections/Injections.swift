@@ -15,23 +15,8 @@ import PelicanRepositories
 import SwiftData
 import PelicanProtocols
 import QuickHatchCore
+import QuickHatchAsync
 
-
-public struct FindAllCountriesRepositoryFactory: FindAllCountriesRepositoryFactorizable {
-    private let modelContainer: ModelContainer
-    
-    public init(modelContainer: ModelContainer) {
-        self.modelContainer = modelContainer
-    }
-    
-    public func make() -> any FindAllCountriesRepository {
-        return SwiftDataRepository<Country>(modelContainer: modelContainer)
-    }
-    
-    public func makeSyncStatus() -> any SyncStatusRepository {
-        return SwiftDataRepository<SyncStatus>(modelContainer: modelContainer)
-    }
-}
 
 public struct Containers {
     public struct Core {
@@ -46,6 +31,15 @@ public struct Containers {
             },
                                   with: .singleton)
             // MARK: Injecting FindAllCountries DataProvider
+            try aquarium.register(dependencyType: (any OfflineStatusValidationRepositoryFactorizable<Country>).self,
+                                  registration: { OfflineValidationRepositoryFactory<Country>(modelContainer: try $0.resolve()) },
+                                  with: .simple)
+            try aquarium.register(dependencyType: TaskCoalescing.self,
+                                  registration: { _ in TaskCoalescer.shared },
+                                  with: .singleton)
+            try aquarium.register(dependencyType: TaskSerializing.self,
+                                  registration: { _ in TaskSerializer.shared },
+                                  with: .singleton)
             try aquarium.register(dependencyType: FindAllCountriesRepositoryFactorizable.self,
                                   registration: { container in
                 return FindAllCountriesRepositoryFactory(modelContainer: try container.resolve())
@@ -54,10 +48,28 @@ public struct Containers {
             try aquarium.register(dependencyType: SyncStatusValidator.self,
                                   registration: { _ in CountriesExpirationSyncStatusValidator() },
                                   with: .simple)
+            try aquarium.register(dependencyType: (any OfflineStatusValidationDataProvidable).self,
+                                  registration: { OfflineStatusValidationDataProvider<Country>(repositoryFactory: try $0.resolve(),
+                                                                                               validator: try $0.resolve()) },
+                                  with: .simple)
             try aquarium.register(dependencyType: (any FindAllCountriesDataProvidable).self,
                                   registration: { container in FindAllCountriesDataProvider(webAPI: try container.resolve(),
                                                                                             repositoryFactory: try container.resolve(),
-                                                                                            validator: try container.resolve())},
+                                                                                            offlineStatusValidationDataProvider: try container.resolve(),
+                                                                                            taskCoalescer: try container.resolve()) },
+                                  with: .simple)
+            try aquarium.register(dependencyType: (any SearchCountriesDataProvidable).self,
+                                  registration: { SearchCountriesByNameDataProvider(webAPI: try $0.resolve(),
+                                                                                    taskSerializer: try $0.resolve() )},
+                                  with: .simple)
+            
+            try aquarium.register(dependencyType: FindCountriesDataProviderFactorizable.self,
+                                  registration: { container in FindCountriesDataProviderFactory(findAll: try container.resolve(),
+                                                                                                search: try container.resolve()) },
+                                  with: .simple)
+            
+            try aquarium.register(dependencyType: (any FindCountriesDataProvidable).self,
+                                  registration: { FindCountriesDataProviderV2(dataProviderFactory: try $0.resolve())},
                                   with: .simple)
             
             // MARK: Injecting Cache

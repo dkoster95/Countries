@@ -27,7 +27,7 @@ public class CountryListViewModel1: CountryListViewModel {
     }
     public var cellModels: [CountryCellModel] = []
     @ObservationIgnored
-    private let dataProvider: (any FindAllCountriesDataProvidable)
+    private let dataProvider: (any FindCountriesDataProvidable)
     @ObservationIgnored
     private let searchInputSubject = PassthroughSubject<String, Never>()
     @ObservationIgnored
@@ -37,7 +37,7 @@ public class CountryListViewModel1: CountryListViewModel {
     private let cellModelFactory: CountryCellModelFactory
     var searchTask: Task<Void, Never>?
     
-    public init(dataProvider: (any FindAllCountriesDataProvidable),
+    public init(dataProvider: (any FindCountriesDataProvidable),
                 cellModelFactory: CountryCellModelFactory) {
         self.dataProvider = dataProvider
         self.cellModelFactory = cellModelFactory

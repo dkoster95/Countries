@@ -72,13 +72,35 @@ public struct EntityDataTransformer<Item: Codable & Equatable & Sendable>: Persi
 
 public protocol FindCountriesDataProvidable: DataProvider<String, [Country]> {}
 
-public typealias FindAllCountriesRepository = AsyncReadableRepository<Country> & AsyncBatchRepository<Country> & AsyncDeleteableRepository<Country>
-public typealias SyncStatusRepository = AsyncReadableRepository<SyncStatus> & AsyncInsertableRepository<SyncStatus> & AsyncUpdatableRepository<SyncStatus>
-
-public protocol FindAllCountriesRepositoryFactorizable: Sendable {
-    func make() -> any FindAllCountriesRepository
-    func makeSyncStatus() -> any SyncStatusRepository
+public protocol FindCountriesDataProviderFactorizable: Sendable {
+    func makeFindAll() -> any FindAllCountriesDataProvidable
+    func makeSearch() -> any SearchCountriesDataProvidable
 }
+
+public struct FindCountriesDataProviderV2: FindCountriesDataProvidable {
+    private let dataProviderFactory: FindCountriesDataProviderFactorizable
+    
+    public init(dataProviderFactory: FindCountriesDataProviderFactorizable) {
+        self.dataProviderFactory = dataProviderFactory
+    }
+    
+    public func execute(_ input: String) async throws -> Array<Country> {
+        if input.isEmpty {
+            return try await dataProviderFactory.makeFindAll().execute(())
+        }
+        return try await dataProviderFactory.makeSearch().execute(input)
+    }
+    
+    
+}
+
+//public typealias FindAllCountriesRepository = AsyncReadableRepository<Country> & AsyncBatchRepository<Country> & AsyncDeleteableRepository<Country>
+//public typealias SyncStatusRepository = AsyncReadableRepository<SyncStatus> & AsyncInsertableRepository<SyncStatus> & AsyncUpdatableRepository<SyncStatus>
+//
+//public protocol FindAllCountriesRepositoryFactorizable: Sendable {
+//    func make() -> any FindAllCountriesRepository
+//    func makeSyncStatus() -> any SyncStatusRepository
+//}
 
 
 public struct FindCountriesDataProvider: FindCountriesDataProvidable, Sendable {

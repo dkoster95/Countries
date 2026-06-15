@@ -1,5 +1,5 @@
 {
-  "originHash" : "4a217ab181e46bdcc75d012e284f8f5af37777bfeedd6702a28dab194a4e68a6",
+  "originHash" : "d762b087c9302f38c5e805c4ebde558196660290ad1b78ea279a53ba6f1090eb",
   "pins" : [
     {
       "identity" : "aquarium",
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "947dd093bf308ac8b7addf3a91a8d7ad530ff384",
         "version" : "1.0.1"
+      }
+    },
+    {
+      "identity" : "quickhatchasync",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dkoster95/QuickHatchAsync.git",
+      "state" : {
+        "revision" : "6bf6835d044aacd4a87caf5a0456aeee935b2beb",
+        "version" : "1.0.0"
       }
     },
     {

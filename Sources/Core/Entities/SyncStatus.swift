@@ -6,7 +6,7 @@
 //
 import Foundation
 
-public enum SyncableEntities: String {
+public enum SyncableEntities: String, Sendable {
     case countries
 }
 
