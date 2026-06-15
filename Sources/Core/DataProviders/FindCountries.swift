@@ -1,9 +1,10 @@
 //
-//  FindAllCountries.swift
+//  FindAllCountriesByInput.swift
 //  Countries
 //
-//  Created by Daniel Koster on 2/5/26.
+//  Created by Daniel Koster on 6/11/26.
 //
+
 
 import Foundation
 import CountriesAPI
@@ -12,6 +13,7 @@ import SwiftData
 import os
 import PelicanProtocols
 import QuickHatchCore
+import QuickHatchAsync
 
 @Model
 public class EntityData {
@@ -68,7 +70,7 @@ public struct EntityDataTransformer<Item: Codable & Equatable & Sendable>: Persi
     
 }
 
-public protocol FindAllCountriesDataProvidable: DataProvider<String, [Country]> {}
+public protocol FindCountriesDataProvidable: DataProvider<String, [Country]> {}
 
 public typealias FindAllCountriesRepository = AsyncReadableRepository<Country> & AsyncBatchRepository<Country> & AsyncDeleteableRepository<Country>
 public typealias SyncStatusRepository = AsyncReadableRepository<SyncStatus> & AsyncInsertableRepository<SyncStatus> & AsyncUpdatableRepository<SyncStatus>
@@ -79,7 +81,7 @@ public protocol FindAllCountriesRepositoryFactorizable: Sendable {
 }
 
 
-public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Sendable {
+public struct FindCountriesDataProvider: FindCountriesDataProvidable, Sendable {
     private let webAPI: AsyncCountryAPI
     private let logger = Logger(subsystem: "Countries.Core", category: "FindAllCountriesDataProvider")
     private let repositoryFactory: FindAllCountriesRepositoryFactorizable
@@ -96,9 +98,13 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
     public func execute(_ input: String) async throws -> [Country] {
         try Task.checkCancellation()
         if input.isEmpty {
-            return try await findAll()
+//            return try await TaskCoalescer.shared.execute(id: "findAllCountries") {
+                return try await findAll()
+//            }
         }
-        return try await search(input: input)
+//        return try await TaskSerializer.shared.execute(id: "searchCountriesByName") {
+            return try await search(input: input)
+//        }
     }
 
     
@@ -149,3 +155,4 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
         return transformedResponse.sorted { $0.name < $1.name }
     }
 }
+
