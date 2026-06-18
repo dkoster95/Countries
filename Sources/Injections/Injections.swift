@@ -69,7 +69,7 @@ public struct Containers {
                                   with: .simple)
             
             try aquarium.register(dependencyType: (any FindCountriesDataProvidable).self,
-                                  registration: { FindCountriesDataProviderV2(dataProviderFactory: try $0.resolve())},
+                                  registration: { FindCountriesDataProvider(dataProviderFactory: try $0.resolve())},
                                   with: .simple)
             
             // MARK: Injecting Cache

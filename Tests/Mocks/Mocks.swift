@@ -11,6 +11,54 @@ import CountriesAPI
 import os
 import QuickHatchAsync
 
+// MARK: - Mock Find All Provider
+public final class MockFindAllCountriesDataProvider: FindAllCountriesDataProvidable, @unchecked Sendable {
+    private let lock = OSAllocatedUnfairLock(initialState: (calledCount: 0, stubbedResult: [Country]()))
+    
+    public var executeCalledCount: Int { lock.withLock { $0.calledCount } }
+    
+    public func stubSuccess(_ countries: [Country]) {
+        lock.withLock { $0.stubbedResult = countries }
+    }
+    
+    public func execute(_ input: Void) async throws -> [Country] {
+        lock.withLock { $0.calledCount += 1 }
+        return lock.withLock { $0.stubbedResult }
+    }
+}
+
+// MARK: - Mock Search Provider
+public final class MockSearchCountriesByNameDataProvider: SearchCountriesDataProvidable, @unchecked Sendable {
+    private let lock = OSAllocatedUnfairLock(initialState: (calledCount: 0, lastInput: nil as String?, stubbedResult: [Country]()))
+    
+    public var executeCalledCount: Int { lock.withLock { $0.calledCount } }
+    public var lastExecutedInput: String? { lock.withLock { $0.lastInput } }
+    
+    public func stubSuccess(_ countries: [Country]) {
+        lock.withLock { $0.stubbedResult = countries }
+    }
+    
+    public func execute(_ input: String) async throws -> [Country] {
+        lock.withLock {
+            $0.calledCount += 1
+            $0.lastInput = input
+        }
+        return lock.withLock { $0.stubbedResult }
+    }
+}
+
+// MARK: - Mock Factory Router
+public final class MockFindCountriesDataProviderFactory: FindCountriesDataProviderFactorizable, @unchecked Sendable {
+    public let mockFindAll = MockFindAllCountriesDataProvider()
+    public let mockSearch = MockSearchCountriesByNameDataProvider()
+    
+    public init() {}
+    
+    public func makeFindAll() -> any FindAllCountriesDataProvidable { mockFindAll }
+    public func makeSearch() -> any SearchCountriesDataProvidable { mockSearch }
+}
+
+
 /// A thread-safe mock implementation of `TaskSerializing` for concurrent testing environments.
 public final class MockTaskSerializer: TaskSerializing, Sendable {
     

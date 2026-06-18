@@ -77,7 +77,7 @@ public protocol FindCountriesDataProviderFactorizable: Sendable {
     func makeSearch() -> any SearchCountriesDataProvidable
 }
 
-public struct FindCountriesDataProviderV2: FindCountriesDataProvidable {
+public struct FindCountriesDataProvider: FindCountriesDataProvidable {
     private let dataProviderFactory: FindCountriesDataProviderFactorizable
     
     public init(dataProviderFactory: FindCountriesDataProviderFactorizable) {
@@ -94,87 +94,79 @@ public struct FindCountriesDataProviderV2: FindCountriesDataProvidable {
     
 }
 
-//public typealias FindAllCountriesRepository = AsyncReadableRepository<Country> & AsyncBatchRepository<Country> & AsyncDeleteableRepository<Country>
-//public typealias SyncStatusRepository = AsyncReadableRepository<SyncStatus> & AsyncInsertableRepository<SyncStatus> & AsyncUpdatableRepository<SyncStatus>
-//
-//public protocol FindAllCountriesRepositoryFactorizable: Sendable {
-//    func make() -> any FindAllCountriesRepository
-//    func makeSyncStatus() -> any SyncStatusRepository
-//}
 
-
-public struct FindCountriesDataProvider: FindCountriesDataProvidable, Sendable {
-    private let webAPI: AsyncCountryAPI
-    private let logger = Logger(subsystem: "Countries.Core", category: "FindAllCountriesDataProvider")
-    private let repositoryFactory: FindAllCountriesRepositoryFactorizable
-    private let validator: SyncStatusValidator
-    
-    public init(webAPI: AsyncCountryAPI,
-                repositoryFactory: FindAllCountriesRepositoryFactorizable,
-                validator: SyncStatusValidator) {
-        self.webAPI = webAPI
-        self.repositoryFactory = repositoryFactory
-        self.validator = validator
-    }
-    
-    public func execute(_ input: String) async throws -> [Country] {
-        try Task.checkCancellation()
-        if input.isEmpty {
-//            return try await TaskCoalescer.shared.execute(id: "findAllCountries") {
-                return try await findAll()
-//            }
-        }
-//        return try await TaskSerializer.shared.execute(id: "searchCountriesByName") {
-            return try await search(input: input)
+//public struct FindCountriesDataProvider: FindCountriesDataProvidable, Sendable {
+//    private let webAPI: AsyncCountryAPI
+//    private let logger = Logger(subsystem: "Countries.Core", category: "FindAllCountriesDataProvider")
+//    private let repositoryFactory: FindAllCountriesRepositoryFactorizable
+//    private let validator: SyncStatusValidator
+//    
+//    public init(webAPI: AsyncCountryAPI,
+//                repositoryFactory: FindAllCountriesRepositoryFactorizable,
+//                validator: SyncStatusValidator) {
+//        self.webAPI = webAPI
+//        self.repositoryFactory = repositoryFactory
+//        self.validator = validator
+//    }
+//    
+//    public func execute(_ input: String) async throws -> [Country] {
+//        try Task.checkCancellation()
+//        if input.isEmpty {
+////            return try await TaskCoalescer.shared.execute(id: "findAllCountries") {
+//                return try await findAll()
+////            }
 //        }
-    }
-
-    
-    private func search(input: String) async throws -> [Country] {
-        try Task.checkCancellation()
-        // validate the input
-        logger.info("\(Thread.current)Searching countries by Input: \(input)")
-        return try await webAPI.find(byName: input)
-            .compactMap { $0.asCountry }
-            .sorted { $0.name < $1.name }
-        //validate the output
-    }
-    
-    private func findAll() async throws -> [Country] {
-        try Task.checkCancellation()
-        logger.debug("\(Thread.current) - finding all countries")
-        
-        let repository = repositoryFactory.make()
-        let syncStatusRepository = repositoryFactory.makeSyncStatus()
-        logger.debug("\(Thread.current) - repository created")
-        logger.info("Finding sync status for \(SyncableEntities.countries.rawValue)")
-        if let countriesSyncStatus = await syncStatusRepository.find (query: { $0.name == SyncableEntities.countries.rawValue }).first {
-            // check expiration date for sync status
-            logger.info("Sync status for \(SyncableEntities.countries.rawValue) found!")
-            if validator.isValid(syncStatus: countriesSyncStatus) {
-                let savedCountries = await repository.find()
-                if !savedCountries.isEmpty {
-                    logger.debug("\(Thread.current) - returning saved countries")
-                    return savedCountries.sorted { $0.name < $1.name }
-                }
-            } else {
-                logger.info("Storage expiration reached proceeding to remove all countries")
-                try await repository.deleteAll()
-                logger.info("All countries deleted")
-            }
-        }
-        try Task.checkCancellation()
-        logger.debug("\(Thread.current) - No data saved, downloading all countries")
-        let response = try await webAPI.find()
-        logger.debug("\(response.count) - Country responses downloaded")
-        let transformedResponse = response.compactMap { $0.asCountry }
-        logger.info("\(transformedResponse.count) valid countries detected")
-        try await repository.add(elements: transformedResponse)
-        logger.debug("\(Thread.current) - added all elements")
-        let syncStatus = SyncStatus(name: SyncableEntities.countries.rawValue)
-        _ = try await syncStatusRepository.add(element: syncStatus)
-        logger.info("Sync status updated")
-        return transformedResponse.sorted { $0.name < $1.name }
-    }
-}
-
+////        return try await TaskSerializer.shared.execute(id: "searchCountriesByName") {
+//            return try await search(input: input)
+////        }
+//    }
+//
+//    
+//    private func search(input: String) async throws -> [Country] {
+//        try Task.checkCancellation()
+//        // validate the input
+//        logger.info("\(Thread.current)Searching countries by Input: \(input)")
+//        return try await webAPI.find(byName: input)
+//            .compactMap { $0.asCountry }
+//            .sorted { $0.name < $1.name }
+//        //validate the output
+//    }
+//    
+//    private func findAll() async throws -> [Country] {
+//        try Task.checkCancellation()
+//        logger.debug("\(Thread.current) - finding all countries")
+//        
+//        let repository = repositoryFactory.make()
+//        let syncStatusRepository = repositoryFactory.makeSyncStatus()
+//        logger.debug("\(Thread.current) - repository created")
+//        logger.info("Finding sync status for \(SyncableEntities.countries.rawValue)")
+//        if let countriesSyncStatus = await syncStatusRepository.find (query: { $0.name == SyncableEntities.countries.rawValue }).first {
+//            // check expiration date for sync status
+//            logger.info("Sync status for \(SyncableEntities.countries.rawValue) found!")
+//            if validator.isValid(syncStatus: countriesSyncStatus) {
+//                let savedCountries = await repository.find()
+//                if !savedCountries.isEmpty {
+//                    logger.debug("\(Thread.current) - returning saved countries")
+//                    return savedCountries.sorted { $0.name < $1.name }
+//                }
+//            } else {
+//                logger.info("Storage expiration reached proceeding to remove all countries")
+//                try await repository.deleteAll()
+//                logger.info("All countries deleted")
+//            }
+//        }
+//        try Task.checkCancellation()
+//        logger.debug("\(Thread.current) - No data saved, downloading all countries")
+//        let response = try await webAPI.find()
+//        logger.debug("\(response.count) - Country responses downloaded")
+//        let transformedResponse = response.compactMap { $0.asCountry }
+//        logger.info("\(transformedResponse.count) valid countries detected")
+//        try await repository.add(elements: transformedResponse)
+//        logger.debug("\(Thread.current) - added all elements")
+//        let syncStatus = SyncStatus(name: SyncableEntities.countries.rawValue)
+//        _ = try await syncStatusRepository.add(element: syncStatus)
+//        logger.info("Sync status updated")
+//        return transformedResponse.sorted { $0.name < $1.name }
+//    }
+//}
+//
