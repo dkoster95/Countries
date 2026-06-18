@@ -66,7 +66,7 @@ let package = Package(
             path: "Sources/Core"),
         .target(
             name: "CountriesMock",
-            dependencies: ["QuickHatchCore", "QuickHatchUI",
+            dependencies: ["QuickHatchCore", "QuickHatchUI", "CountriesCore", "QuickHatchAsync",
                            .product(name: "CountriesAPI", package: "CountriesAPI"),
                            .product(name: "PelicanProtocols", package: "PelicanSwift"),
                            .product(name: "QHValidator", package: "QHValidator")],

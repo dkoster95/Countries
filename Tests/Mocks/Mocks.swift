@@ -8,6 +8,125 @@ import Foundation
 import PelicanProtocols
 import CountriesCore
 import CountriesAPI
+import os
+import QuickHatchAsync
+
+/// A thread-safe mock implementation of `TaskCoalescing` for concurrent testing environments.
+public final class MockTaskCoalescer: TaskCoalescing, Sendable {
+    
+    // --- Internal State Enclosed by a Thread-Safe Unfair Lock ---
+    private let lock = OSAllocatedUnfairLock(initialState: MockState())
+    
+    private struct MockState {
+        var executeCallCount = 0
+        var lastExecutedId: String? = nil
+        var idsExecuted: [String] = []
+        var forcedResult: (any Sendable)? = nil
+        var forcedError: (any Error)? = nil
+        var bypassActualOperation = false
+        var executionDelay: Duration? = nil
+    }
+    
+    public init() {}
+    
+    // MARK: - Test Stub Configuration Helpers
+    
+    /// Forces the coalescer to completely bypass the internal closure block and return this specific value.
+    public func stubSuccess<T: Sendable>(_ value: T) {
+        lock.withLock {
+            $0.forcedResult = value
+            $0.bypassActualOperation = true
+        }
+    }
+    
+    /// Forces the coalescer to completely bypass the internal closure block and throw this error.
+    public func stubFailure(_ error: any Error) {
+        lock.withLock {
+            $0.forcedError = error
+            $0.bypassActualOperation = true
+        }
+    }
+    
+    /// Simulates artificial thread lag inside the execution pipeline to test timeout rules or parallel races.
+    public func stubDelay(_ duration: Duration) {
+        lock.withLock { $0.executionDelay = duration }
+    }
+    
+    // MARK: - Read-Only Inspection Accessors
+    
+    /// Returns the exact number of times `execute` was invoked.
+    public var executeCallCount: Int {
+        lock.withLock { $0.executeCallCount }
+    }
+    
+    /// Returns the string identifier parsed into the final execution step.
+    public var lastExecutedId: String? {
+        lock.withLock { $0.lastExecutedId }
+    }
+    
+    /// Returns an ordered list array of all coalescing context tags processed by this mock.
+    public var idsExecuted: [String] {
+        lock.withLock { $0.idsExecuted }
+    }
+    
+    // MARK: - Protocol Implementation Contract
+    
+    public func execute<Value: Sendable>(
+        id: String,
+        evictionTimeout: Duration,
+        operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> Value {
+        
+        // 1. Thread-safely update telemetry variables
+        lock.withLock { state in
+            state.executeCallCount += 1
+            state.lastExecutedId = id
+            state.idsExecuted.append(id)
+        }
+        
+        // 2. Introduce artificial delay if requested by the configuration stub
+        if let delay = lock.withLock({ $0.executionDelay }) {
+            try await Task.sleep(for: delay)
+        }
+        
+        // 3. Extract the configured bypass state
+        let config = lock.withLock { ($0.bypassActualOperation, $0.forcedError, $0.forcedResult) }
+        
+        if config.0 {
+            if let error = config.1 {
+                throw error
+            }
+            if let result = config.2 as? Value {
+                return result
+            }
+            fatalError("MockTaskCoalescer Misconfiguration: The stubbed result type does not match the expected type '\(Value.self)'.")
+        }
+        
+        // 4. If no mock bypass stub is configured, run the fallback actual code block
+        return try await operation()
+    }
+}
+
+
+// MARK: - Mock Offline Validator
+public final class MockOfflineValidator: OfflineStatusValidationDataProvidable, @unchecked Sendable {
+    private let lock = OSAllocatedUnfairLock(initialState: (isValid: true, lastCheckedEntity: nil as SyncableEntities?))
+    
+    public init() {}
+    
+    public var stubbedIsValid: Bool {
+        get { lock.withLock { $0.isValid } }
+        set { lock.withLock { $0.isValid = newValue } }
+    }
+    public var lastCheckedEntity: SyncableEntities? {
+        lock.withLock { $0.lastCheckedEntity }
+    }
+    
+    public func execute(_ input: SyncableEntities) async throws -> Bool {
+        lock.withLock { $0.lastCheckedEntity = input }
+        return stubbedIsValid
+    }
+}
 
 public final class MockSyncStatusValidator: SyncStatusValidator, @unchecked Sendable {
     

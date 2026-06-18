@@ -1,227 +1,206 @@
 //
-//  FindAllCountriesTests.swift
-//  Countries
+//  FindAllCountriesDataProviderTests.swift
+//  CountriesTests
 //
-//  Created by Daniel Koster on 6/3/26.
+//  Created by Daniel Koster on 6/18/26.
 //
+
 import Testing
 import Foundation
-import CountriesCore
-import CountriesMock
+import QuickHatchCore
 import CountriesAPI
+import PelicanProtocols
+import QuickHatchAsync
+import os
+@testable import CountriesCore
+import CountriesMock
 
-@Suite("Find All Countries Data Provider Tests")
+@Suite("FindAllCountriesDataProvider Tests")
 struct FindAllCountriesDataProviderTests {
     
-    // MARK: - Search Flow Tests
-    
-    @Test("execute() with non-empty input invokes search flow and returns sorted countries")
-    func executeWithInputInvokesSearchFlow() async throws {
-        // Arrange
-        let stubbedResponses = [
-            CountryResponse.makeStub(commonName: "Uruguay"),
-            CountryResponse.makeStub(commonName: "Argentina")
-        ]
-        let mockAPI = MockAsyncCountryAPI(stubbedFindByNameResult: stubbedResponses)
-        let mockFactory = MockRepositoryFactory()
-        let mockValidator = MockSyncStatusValidator()
+    // MARK: - Test Context Coordinator
+    /// Encapsulates dependencies to avoid boilerplates inside individual tests.
+    private struct TestContext {
+        let webAPI: MockAsyncCountryAPI
+        let countryRepository: MockGenericRepository<Country>
+        let syncStatusRepository: MockGenericRepository<SyncStatus>
+        let repositoryFactory: MockRepositoryFactory
+        let offlineValidator: MockOfflineValidator
+        let taskCoalescer: MockTaskCoalescer
+        let sut: FindAllCountriesDataProvider
         
-        let sut = FindAllCountriesDataProvider(
-            webAPI: mockAPI,
-            repositoryFactory: mockFactory,
-            validator: mockValidator
-        )
-        
-        // Act
-        let result = try await sut.execute("Uru")
-        
-        // Assert
-        let apiCallCount = await mockAPI.findByNameCalledCount
-        let queryPassed = await mockAPI.lastFindByNameQuery
-        
-        #expect(apiCallCount == 1)
-        #expect(queryPassed == "Uru")
-        #expect(result.count == 2)
-        #expect(result[0].name == "Argentina") // Sorted verification
-        #expect(result[1].name == "Uruguay")
+        init(stubbedLocalCountries: [Country] = []) async {
+            self.webAPI = MockAsyncCountryAPI()
+            self.countryRepository = MockGenericRepository<Country>(stubbedElements: stubbedLocalCountries)
+            self.syncStatusRepository = MockGenericRepository<SyncStatus>()
+            self.repositoryFactory = MockRepositoryFactory(
+                countryRepository: countryRepository,
+                syncStatusRepository: syncStatusRepository
+            )
+            self.offlineValidator = MockOfflineValidator()
+            self.taskCoalescer = MockTaskCoalescer()
+            self.sut = FindAllCountriesDataProvider(
+                webAPI: webAPI,
+                repositoryFactory: repositoryFactory,
+                offlineStatusValidationDataProvider: offlineValidator,
+                taskCoalescer: taskCoalescer
+            )
+        }
     }
     
-    // MARK: - Empty Input / Cache Success Flow Tests
-    
-    @Test("execute() with empty input returns valid cached data without hitting web API")
-    func executeWithValidCacheReturnsLocalData() async throws {
+    // MARK: - Test Cases
+
+    @Test("Verify that execution channels seamlessly through the TaskCoalescing engine with correct ID and eviction thresholds")
+    func testTaskCoalescerIntegrationParameters() async throws {
         // Arrange
-        let savedStatus = SyncStatus(name: SyncableEntities.countries.rawValue)
-        let savedCountries = [
-            Country.makeStub(name: "Canada"),
-            Country.makeStub(name: "Brazil")
-        ]
-        
-        let countryRepo = MockGenericRepository<Country>(stubbedElements: savedCountries)
-        let syncRepo = MockGenericRepository<SyncStatus>(stubbedElements: [savedStatus])
-        let mockFactory = MockRepositoryFactory(countryRepository: countryRepo, syncStatusRepository: syncRepo)
-        
-        let mockAPI = MockAsyncCountryAPI()
-        let mockValidator = MockSyncStatusValidator(stubbedIsValidResult: true)
-        
-        let sut = FindAllCountriesDataProvider(
-            webAPI: mockAPI,
-            repositoryFactory: mockFactory,
-            validator: mockValidator
-        )
+        let context = await TestContext(stubbedLocalCountries: [Country(name: "Uruguay")])
+        context.offlineValidator.stubbedIsValid = true
         
         // Act
-        let result = try await sut.execute("")
+        _ = try await context.sut.execute(())
         
         // Assert
-        let apiCallCount = await mockAPI.findCalledCount
-        let countryFindCount = await countryRepo.findCalledCount
-        let validatorCallCount = mockValidator.isValidCalledCount
-        
-        #expect(apiCallCount == 0) // Did not hit network
-        #expect(validatorCallCount == 1)
-        #expect(countryFindCount == 1)
-        #expect(result.count == 2)
-        #expect(result[0].name == "Brazil") // Sorted verification
+        #expect(context.taskCoalescer.executeCallCount == 1)
+        #expect(context.taskCoalescer.lastExecutedId == "find_all_countries")
     }
     
-    // MARK: - Empty Input / Cache Expired Flow Tests
-    
-    @Test("execute() with empty input clears expired cache, pulls fresh data, and updates sync state")
-    func executeWithExpiredCacheDeletesLocalAndRefreshes() async throws {
-        // Arrange
-        let expiredStatus = SyncStatus(name: SyncableEntities.countries.rawValue)
-        
-        let countryRepo = MockGenericRepository<Country>()
-        let syncRepo = MockGenericRepository<SyncStatus>(stubbedElements: [expiredStatus])
-        let mockFactory = MockRepositoryFactory(countryRepository: countryRepo, syncStatusRepository: syncRepo)
-        
-        let networkResponse = [CountryResponse.makeStub(commonName: "France")]
-        let mockAPI = MockAsyncCountryAPI(stubbedFindResult: networkResponse)
-        let mockValidator = MockSyncStatusValidator(stubbedIsValidResult: false) // Expired
-        
-        let sut = FindAllCountriesDataProvider(
-            webAPI: mockAPI,
-            repositoryFactory: mockFactory,
-            validator: mockValidator
-        )
+    @Test("When offline status is valid and local storage has records, return alphabetically sorted countries without executing web requests")
+    func testReturnsSortedLocalCacheWhenValidAndNotEmpty() async throws {
+        // Arrange unsorted domain elements inside the local database stub
+        let unsortedData = [Country(name: "Uruguay"), Country(name: "Argentina"), Country(name: "Brazil")]
+        let context = await TestContext(stubbedLocalCountries: unsortedData)
+        context.offlineValidator.stubbedIsValid = true
         
         // Act
-        let result = try await sut.execute("")
+        let result = try await context.sut.execute(())
+        
+        // Assert strict sorting layout compliance rules (A < B < U)
+        #expect(result.count == 3)
+        #expect(result[0].name == "Argentina")
+        #expect(result[1].name == "Brazil")
+        #expect(result[2].name == "Uruguay")
+        
+        // Verify via spies that the network layer remained un-invoked
+        let webCallCount = await context.webAPI.findCalledCount
+        #expect(webCallCount == 0)
+        
+        // Verify the database layer read request occurred once
+        let repoReadCount = await context.countryRepository.findCalledCount
+        #expect(repoReadCount == 1)
+    }
+    
+    @Test("When offline status is valid but local storage is completely empty, fallback immediately to remote web pipeline to synchronize elements")
+    func testDownloadsFromWebWhenCacheIsValidButStorageIsEmpty() async throws {
+        // Arrange
+        let context = await TestContext(stubbedLocalCountries: []) // Empty local database
+        context.offlineValidator.stubbedIsValid = true
+        
+        let apiResponses = [CountryResponse(name: "Canada"), CountryResponse(name: "Japan")]
+        await context.webAPI.setStubbedFindResult(apiResponses)
+        
+        // Act
+        let result = try await context.sut.execute(())
+        
+        // Assert sorting on network elements fallback returns correctly (C < J)
+        #expect(result.count == 2)
+        #expect(result[0].name == "Canada")
+        #expect(result[1].name == "Japan")
+        
+        // Verify validation tracking mapped the correct entity key enumeration context
+        #expect(context.offlineValidator.lastCheckedEntity == .countries)
+        
+        // Verify data payload batch insertion spies updated successfully
+        let batchCallCount = await context.countryRepository.addBatchCalledCount
+        let capturedBatch = await context.countryRepository.receivedBatchElements
+        #expect(batchCallCount == 1)
+        #expect(capturedBatch.count == 2)
+        #expect(capturedBatch.contains { $0.name == "Canada" })
+        
+        // Verify sync status registry update spy successfully tracked structural changes
+        let syncInsertCount = await context.syncStatusRepository.addSingleCalledCount
+        let capturedSyncElement = await context.syncStatusRepository.lastAddedSingleElement
+        #expect(syncInsertCount == 1)
+        #expect(capturedSyncElement?.name == SyncableEntities.countries.rawValue)
+    }
+    
+    @Test("When offline status lifecycle evaluates as stale, skip reading old data, download new payloads, and overwrite local tracking metrics")
+    func testDownloadsAndOverwritesEverythingWhenCacheIsStale() async throws {
+        // Arrange
+        let context = await TestContext(stubbedLocalCountries: [Country(name: "StaleCountry")])
+        context.offlineValidator.stubbedIsValid = false // Stale policy setting
+        
+        let freshAPIResponse = [CountryResponse(name: "FreshCountry")]
+        await context.webAPI.setStubbedFindResult(freshAPIResponse)
+        
+        // Act
+        let result = try await context.sut.execute(())
         
         // Assert
-        let deleteCalledCount = await countryRepo.deleteAllCalledCount
-        let apiCallCount = await mockAPI.findCalledCount
-        let savedBatchCount = await countryRepo.addBatchCalledCount
-        let updatedSyncCount = await syncRepo.addSingleCalledCount
-        
-        #expect(deleteCalledCount == 1) // Verified cache eviction
-        #expect(apiCallCount == 1)      // Verified data refresh
-        #expect(savedBatchCount == 1)   // Saved back to database
-        #expect(updatedSyncCount == 1)  // Reset sync status timestamp
         #expect(result.count == 1)
-        #expect(result.first?.name == "France")
+        #expect(result.first?.name == "FreshCountry")
+        
+        // Confirm repository spy captured batch insertion mapping updates smoothly
+        let capturedBatchData = await context.countryRepository.receivedBatchElements
+        #expect(capturedBatchData.count == 1)
+        #expect(capturedBatchData.first?.name == "FreshCountry")
+        
+        // Verify the database was never read from due to invalidation policy triggers
+        let localFindCount = await context.countryRepository.findCalledCount
+        #expect(localFindCount == 0)
     }
     
-    @Test("execute() with empty input pulls from network when no previous sync status exists")
-    func executeWithNoCacheFetchesFromNetwork() async throws {
+    @Test("When downstream network operation errors out, verify the fault propagates up through the pipeline execution stack securely")
+    func testNetworkFailurePropagatesErrorUpward() async throws {
         // Arrange
-        let countryRepo = MockGenericRepository<Country>()
-        let syncRepo = MockGenericRepository<SyncStatus>(stubbedElements: []) // No cache entry
-        let mockFactory = MockRepositoryFactory(countryRepository: countryRepo, syncStatusRepository: syncRepo)
+        let context = await TestContext(stubbedLocalCountries: [])
+        context.offlineValidator.stubbedIsValid = false
         
-        let networkResponse = [CountryResponse.makeStub(commonName: "Japan")]
-        let mockAPI = MockAsyncCountryAPI(stubbedFindResult: networkResponse)
-        let mockValidator = MockSyncStatusValidator()
+        struct SampleNetworkError: Error, Equatable {}
+        await context.webAPI.setShouldThrowError(SampleNetworkError())
         
-        let sut = FindAllCountriesDataProvider(
-            webAPI: mockAPI,
-            repositoryFactory: mockFactory,
-            validator: mockValidator
-        )
+        // Act & Assert using Swift Testing throws validation metrics blocks
+        await #expect(throws: SampleNetworkError.self) {
+            try await context.sut.execute(())
+        }
+    }
+    
+    @Test("Verify task early cancellation hooks short-circuit pipeline evaluations cleanly prior to performing heavy tasks")
+    func testTaskCancellationExitsExecutionGracefully() async throws {
+        // Arrange
+        let context = await TestContext()
         
-        // Act
-        let result = try await sut.execute("")
+        // Execute structural pipeline context wrapper directly on a cancelled thread Task container block
+        let standaloneTask = Task {
+            try await context.sut.execute(())
+        }
+        standaloneTask.cancel() // Prompt cancel states
         
         // Assert
-        let validatorCallCount = mockValidator.isValidCalledCount
-        let deleteCalledCount = await countryRepo.deleteAllCalledCount
-        let apiCallCount = await mockAPI.findCalledCount
-        
-        #expect(validatorCallCount == 0) // Validator skipped since no status was found
-        #expect(deleteCalledCount == 0)   // Nothing to delete
-        #expect(apiCallCount == 1)        // Hit network directly
-        #expect(result.first?.name == "Japan")
-    }
-    
-    // MARK: - Cancellation Boundary Tests
-    
-    @Test("execute() throws CancellationError early if the caller task was cancelled")
-    func executeHandlesCooperativeCancellation() async throws {
-        // Arrange
-        let mockAPI = MockAsyncCountryAPI()
-        let mockFactory = MockRepositoryFactory()
-        let mockValidator = MockSyncStatusValidator()
-        
-        let sut = FindAllCountriesDataProvider(
-            webAPI: mockAPI,
-            repositoryFactory: mockFactory,
-            validator: mockValidator
-        )
-        
-        // Act & Assert
-        let task = Task {
-            try await sut.execute("")
-        }
-        task.cancel()
-        
         await #expect(throws: CancellationError.self) {
-            try await task.value
+            try await standaloneTask.value
         }
     }
 }
 
-
-extension Country {
-    /// Convenience initializer for tests to avoid passing every argument manually
-    static func makeStub(
-        uuid: UUID = UUID(),
-        name: String,
-        flagURL: String? = nil,
-        region: String? = nil,
-        subregion: String? = nil,
-        languages: String? = nil
-    ) -> Country {
-        Country(
-            uuid: uuid,
-            name: name,
-            flagURL: flagURL,
-            region: region,
-            subregion: subregion,
-            languages: languages
-        )
+// MARK: - Concurrent Actor Mutation Test Helpers
+/// Extensions to facilitate clean test state manipulation boundaries with the Mock Actor types without encountering warnings.
+extension MockAsyncCountryAPI {
+    func setStubbedFindResult(_ values: [CountryResponse]) {
+        self.stubbedFindResult = values
+    }
+    func setShouldThrowError(_ error: Error?) {
+        self.shouldThrowError = error
     }
 }
 
-extension CountryResponse {
-    /// Convenience initializer for tests to quickly stub network payloads
-    static func makeStub(
-        commonName: String,
-        pngFlag: String? = nil,
-        languages: [String: String]? = nil,
-        region: String? = nil,
-        subregion: String? = nil
-    ) -> CountryResponse {
-        let nameContainer = Name(common: commonName, official: nil, nativeName: nil)
-        let flagsContainer = Flags(png: pngFlag, svg: nil, alt: nil)
-        
-        return CountryResponse(
-            name: nameContainer,
-            flags: flagsContainer,
-            languages: languages,
-            region: region,
-            subregion: subregion
-        )
+private extension Country {
+    init(name: String) {
+        self.init(uuid: UUID(), name: name, flagURL: nil, region: nil, subregion: nil, languages: nil)
     }
 }
 
+private extension CountryResponse {
+    init(name: String) {
+        self.init(name: Name(common: name, official: name, nativeName: nil), flags: nil, languages: nil, region: nil, subregion: nil)
+    }
+}

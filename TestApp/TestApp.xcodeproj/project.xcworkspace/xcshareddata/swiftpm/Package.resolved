@@ -38,6 +38,15 @@
       }
     },
     {
+      "identity" : "quickhatchasync",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dkoster95/QuickHatchAsync.git",
+      "state" : {
+        "revision" : "6bf6835d044aacd4a87caf5a0456aeee935b2beb",
+        "version" : "1.0.0"
+      }
+    },
+    {
       "identity" : "quickhatchcore",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/dkoster95/QuickHatchCore.git",
