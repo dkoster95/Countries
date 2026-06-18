@@ -11,6 +11,59 @@ import CountriesAPI
 import os
 import QuickHatchAsync
 
+/// A thread-safe mock implementation of `TaskSerializing` for concurrent testing environments.
+public final class MockTaskSerializer: TaskSerializing, Sendable {
+    
+    private let lock = OSAllocatedUnfairLock(initialState: MockState())
+    
+    private struct MockState {
+        var executeCallCount = 0
+        var lastExecutedId: String? = nil
+        var forcedResult: (any Sendable)? = nil
+        var forcedError: (any Error)? = nil
+        var bypassActualOperation = false
+    }
+    
+    public init() {}
+    
+    public func stubSuccess<T: Sendable>(_ value: T) {
+        lock.withLock {
+            $0.forcedResult = value
+            $0.bypassActualOperation = true
+        }
+    }
+    
+    public func stubFailure(_ error: any Error) {
+        lock.withLock {
+            $0.forcedError = error
+            $0.bypassActualOperation = true
+        }
+    }
+    
+    public var executeCallCount: Int { lock.withLock { $0.executeCallCount } }
+    public var lastExecutedId: String? { lock.withLock { $0.lastExecutedId } }
+    
+    public func execute<Value: Sendable>(
+        id: String,
+        operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> Value {
+        lock.withLock { state in
+            state.executeCallCount += 1
+            state.lastExecutedId = id
+        }
+        
+        let config = lock.withLock { ($0.bypassActualOperation, $0.forcedError, $0.forcedResult) }
+        
+        if config.0 {
+            if let error = config.1 { throw error }
+            if let result = config.2 as? Value { return result }
+            fatalError("MockTaskSerializer Misconfiguration: Type mismatch.")
+        }
+        
+        return try await operation()
+    }
+}
+
 /// A thread-safe mock implementation of `TaskCoalescing` for concurrent testing environments.
 public final class MockTaskCoalescer: TaskCoalescing, Sendable {
     

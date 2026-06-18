@@ -193,13 +193,13 @@ extension MockAsyncCountryAPI {
     }
 }
 
-private extension Country {
+extension Country {
     init(name: String) {
         self.init(uuid: UUID(), name: name, flagURL: nil, region: nil, subregion: nil, languages: nil)
     }
 }
 
-private extension CountryResponse {
+extension CountryResponse {
     init(name: String) {
         self.init(name: Name(common: name, official: name, nativeName: nil), flags: nil, languages: nil, region: nil, subregion: nil)
     }
