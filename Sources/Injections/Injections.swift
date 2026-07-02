@@ -58,9 +58,13 @@ public struct Containers {
                                                                                             offlineStatusValidationDataProvider: try container.resolve(),
                                                                                             taskCoalescer: try container.resolve()) },
                                   with: .simple)
+            try aquarium.register(dependencyType: (any SearchCountriesRepositoryFactorizable).self,
+                                  registration: { SearchConutriesRepositoryFactory(modelContainer: try $0.resolve())},
+                                  with: .simple)
             try aquarium.register(dependencyType: (any SearchCountriesDataProvidable).self,
                                   registration: { SearchCountriesByNameDataProvider(webAPI: try $0.resolve(),
-                                                                                    taskSerializer: try $0.resolve() )},
+                                                                                    taskSerializer: try $0.resolve(),
+                                                                                    repositoryFactory: try $0.resolve())},
                                   with: .simple)
             
             try aquarium.register(dependencyType: FindCountriesDataProviderFactorizable.self,

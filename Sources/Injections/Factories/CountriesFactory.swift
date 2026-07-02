@@ -10,6 +10,18 @@ import PelicanProtocols
 import PelicanRepositories
 import SwiftData
 
+public struct SearchConutriesRepositoryFactory: SearchCountriesRepositoryFactorizable {
+    private let modelContainer: ModelContainer
+    
+    public init(modelContainer: ModelContainer) {
+        self.modelContainer = modelContainer
+    }
+    
+    public func make() -> any PelicanProtocols.AsyncPredicableReadableRepository<CountriesCore.CountryEntity, CountriesCore.Country> {
+        return SwiftDataRepository(modelContainer: modelContainer)
+    }
+}
+
 public struct FindAllCountriesRepositoryFactory: FindAllCountriesRepositoryFactorizable {
     private let modelContainer: ModelContainer
     
