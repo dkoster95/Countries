@@ -29,6 +29,9 @@ public struct CountryList: View {
         NavigationStack {
             List(viewModel.cellModels) { cellModel in
                 CountryCell(model: cellModel)
+                    .onTapGesture {
+                        print(cellModel.name)
+                }
             }
             .listStyle(.inset)
             .refreshable {
