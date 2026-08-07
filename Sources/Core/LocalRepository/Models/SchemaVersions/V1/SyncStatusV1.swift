@@ -11,7 +11,7 @@ extension CountriesSchemaV1 {
     @Model
     public class SyncStatusEntity {
         @Attribute(.unique) var uuid: UUID
-        @Attribute(.unique) var name: String
+        var name: String
         var createdAt: Date
         
         init(uuid: UUID = UUID(),

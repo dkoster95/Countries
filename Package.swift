@@ -30,7 +30,7 @@ let package = Package(
                  from: "1.0.1"),
         .package(url: "https://github.com/dkoster95/QuickHatchCore.git",
                  from: "1.0.0"),
-        .package(url: "https://github.com/dkoster95/QuickHatchUI.git", from: "1.0.0"),
+        .package(url: "https://github.com/dkoster95/QuickHatchUI.git", from: "1.0.2"),
         .package(url: "https://github.com/dkoster95/QuickHatchAsync.git", from: "1.0.0")
     ],
     targets: [

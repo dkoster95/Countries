@@ -11,7 +11,7 @@ extension CountriesSchemaV1 {
     @Model
     public class CountryEntity {
         @Attribute(.unique) var uuid: UUID
-        @Attribute(.unique) var name: String
+        var name: String
         var flagURL: String
         var createdAt: Date
         var languages: String

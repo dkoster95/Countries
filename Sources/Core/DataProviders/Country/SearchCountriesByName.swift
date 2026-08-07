@@ -43,6 +43,10 @@ public struct SearchCountriesByNameDataProvider: SearchCountriesDataProvidable {
                 return countries
                 //validate the output
             } catch let error {
+                if error is CancellationError {
+                    logger.debug("Search network call for '\(input)' was cancelled. Exiting cleanly.")
+                    throw error
+                }
                 logger.error("Error thrown by API \(error)")
                 return await findLocally(input: input)
             }
@@ -50,6 +54,7 @@ public struct SearchCountriesByNameDataProvider: SearchCountriesDataProvidable {
     }
     
     private func findLocally(input: String) async -> [Country] {
+        guard !Task.isCancelled else { return [] }
         let repository = repositoryFactory.make()
         logger.debug("Filtering countries in DB by name")
         let predicate = CountryQueries().search(byName: input)

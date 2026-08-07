@@ -12,7 +12,7 @@ import OSLog
 import PelicanRepositories
 
 @MainActor
-public protocol CountryListViewModel: Sendable {
+public protocol CountryListViewModel: Sendable, Observable, AnyObject {
     var cellModels: [CountryCellModel] { get set }
     var searchText: String { get set }
     func reload() async
@@ -20,12 +20,14 @@ public protocol CountryListViewModel: Sendable {
 
 @Observable
 public class CountryListViewModel1: CountryListViewModel {
+    
     public var searchText: String = "" {
         didSet {
             searchInputSubject.send(searchText)
         }
     }
     public var cellModels: [CountryCellModel] = []
+    
     @ObservationIgnored
     private let dataProvider: (any FindCountriesDataProvidable)
     @ObservationIgnored
@@ -34,14 +36,16 @@ public class CountryListViewModel1: CountryListViewModel {
     private var cancellables = Set<AnyCancellable>()
     @ObservationIgnored
     private let logger = Logger(subsystem: "Countries.UI", category: "CountryList")
+    @ObservationIgnored
     private let cellModelFactory: CountryCellModelFactory
+    @ObservationIgnored
     var searchTask: Task<Void, Never>?
     
     public init(dataProvider: (any FindCountriesDataProvidable),
                 cellModelFactory: CountryCellModelFactory) {
         self.dataProvider = dataProvider
         self.cellModelFactory = cellModelFactory
-        configureSearch()
+//        configureSearch()
     }
     
     private func configureSearch() {
@@ -60,6 +64,7 @@ public class CountryListViewModel1: CountryListViewModel {
     
     public func reload() async {
         logger.debug("\(Thread.current) Reloading countries")
+        guard !Task.isCancelled else { return }
         if let countries = try? await dataProvider.execute(searchText) {
             logger.debug("\(Thread.current) - \(countries.count) Countries found, proceeding to map into cellModels")
             let cellModelsMapped = countries.map { cellModelFactory.make(country: $0) }

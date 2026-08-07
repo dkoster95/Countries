@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/dkoster95/QuickHatchUI.git",
       "state" : {
-        "revision" : "d1f6585db40a07b0e034e16b8ef195ff028bd17a",
-        "version" : "1.0.0"
+        "revision" : "b7b2528f3c05f15fdb0e49f11798dabb352ec7b8",
+        "version" : "1.0.2"
       }
     }
   ],

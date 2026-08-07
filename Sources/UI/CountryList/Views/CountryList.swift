@@ -19,7 +19,7 @@ public class CountryListViewModel2: CountryListViewModel {
 }
 
 public struct CountryList: View {
-    @State private var viewModel: CountryListViewModel
+    private var viewModel: any CountryListViewModel
     
     public init(viewModel: CountryListViewModel) {
         self.viewModel = viewModel
@@ -49,9 +49,16 @@ public struct CountryList: View {
 
                 }
             }
-            .searchable(text: $viewModel.searchText, prompt: "Search Countries")
+            .searchable(text: Binding(
+                get: { viewModel.searchText },
+                set: { viewModel.searchText = $0 }
+            ), prompt: "Search Countries")
             .navigationTitle("Countries")
-            .task {
+            .task(id: viewModel.searchText) {
+                if !viewModel.searchText.isEmpty {
+                    try? await Task.sleep(for: .milliseconds(300))
+                }
+                guard !Task.isCancelled else { return }
                 await viewModel.reload()
             }
         }
