@@ -45,7 +45,7 @@ public struct OfflineValidationRepositoryFactory<Entity: PersistenModelConvertib
         self.modelContainer = modelContainer
     }
     
-    public func make() -> any PelicanProtocols.AsyncDeleteableRepository<Entity> where Entity : Equatable, Entity : Sendable {
+    public func make() -> any CountriesCore.OfflineEntityRepository<Entity> {
         return SwiftDataRepository<Entity>(modelContainer: modelContainer)
     }
     
