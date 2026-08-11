@@ -49,11 +49,11 @@ public struct CountryList: View {
 
                 }
             }
+            .navigationTitle("Countries")
             .searchable(text: Binding(
                 get: { viewModel.searchText },
                 set: { viewModel.searchText = $0 }
             ), prompt: "Search Countries")
-            .navigationTitle("Countries")
             .task(id: viewModel.searchText) {
                 if !viewModel.searchText.isEmpty {
                     try? await Task.sleep(for: .milliseconds(300))
