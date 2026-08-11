@@ -21,45 +21,19 @@ public protocol CountryListViewModel: Sendable, Observable, AnyObject {
 @Observable
 public class CountryListViewModel1: CountryListViewModel {
     
-    public var searchText: String = "" {
-        didSet {
-            searchInputSubject.send(searchText)
-        }
-    }
+    public var searchText: String = ""
     public var cellModels: [CountryCellModel] = []
-    
     @ObservationIgnored
     private let dataProvider: (any FindCountriesDataProvidable)
-    @ObservationIgnored
-    private let searchInputSubject = PassthroughSubject<String, Never>()
-    @ObservationIgnored
-    private var cancellables = Set<AnyCancellable>()
     @ObservationIgnored
     private let logger = Logger(subsystem: "Countries.UI", category: "CountryList")
     @ObservationIgnored
     private let cellModelFactory: CountryCellModelFactory
-    @ObservationIgnored
-    var searchTask: Task<Void, Never>?
     
     public init(dataProvider: (any FindCountriesDataProvidable),
                 cellModelFactory: CountryCellModelFactory) {
         self.dataProvider = dataProvider
         self.cellModelFactory = cellModelFactory
-//        configureSearch()
-    }
-    
-    private func configureSearch() {
-        searchInputSubject
-                    .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
-                    .sink { [weak self] debouncedQuery in
-                        guard let self = self else { return }
-                        logger.debug("Debounced query: \(self.searchText)")
-                        searchTask?.cancel()
-                        searchTask = Task {
-                            await reload()
-                        }
-                    }
-                    .store(in: &cancellables)
     }
     
     public func reload() async {
@@ -72,27 +46,4 @@ public class CountryListViewModel1: CountryListViewModel {
             
         }
     }
-    
-    private func detailText(country: CountryResponse) -> String {
-        let regions = [country.region, country.subregion].compactMap { $0 }.filter { !$0.isEmpty}
-        return regions.joined(separator: ", ")
-    }
-    
-//
-//    private func loadCellModels() {
-//        Task { [weak self] in
-//            if let countries = try await self?.dataProvider.execute("") {
-//                let cellModelsMapped = countries.map { CountryCellModel(name: $0.name?.official ?? "",
-//                                                                        detail: ($0.subregion ?? "") + ", " + ($0.region ?? ""),
-//                                                                        image: $0.flags?.png ?? "") }
-//                    self?.cellModels = cellModelsMapped
-//            }
-//        }
-//    }
-    
-//    private func map(country: CountryResponse) -> CountryCellModel {
-//        CountryCellModel(name: country.name?.official ?? "",
-//                         detail: (country.subregion ?? "") + ", " + (country.region ?? ""),
-//                         image: country.flags?.png ?? "")
-//    }
 }
