@@ -14,21 +14,23 @@ import os
 public protocol SearchCountriesDataProvidable: DataProvider<String, [Country]> {}
 
 public protocol SearchCountriesRepositoryFactorizable: Sendable {
-    func make() -> any AsyncPredicableReadableRepository<CountryEntity, Country>
+    func make() -> any SearchCountriesRepository
 }
+
+public typealias SearchCountriesRepository = AsyncPredicableReadableRepository<CountryEntity, Country> & Sendable
 
 public struct SearchCountriesByNameDataProvider: SearchCountriesDataProvidable {
     private let webAPI: AsyncCountryAPI
     private let logger = Logger(subsystem: "Countries.Core", category: "SearchCountriesByNameDataProvider")
     private let taskSerializer: TaskSerializing
-    private let repositoryFactory: SearchCountriesRepositoryFactorizable
+    private let countryRepository: any SearchCountriesRepository
     
     public init(webAPI: AsyncCountryAPI,
                 taskSerializer: TaskSerializing,
                 repositoryFactory: SearchCountriesRepositoryFactorizable) {
         self.webAPI = webAPI
         self.taskSerializer = taskSerializer
-        self.repositoryFactory = repositoryFactory
+        self.countryRepository = repositoryFactory.make()
     }
     
     public func execute(_ input: String) async throws -> [Country] {
@@ -55,11 +57,10 @@ public struct SearchCountriesByNameDataProvider: SearchCountriesDataProvidable {
     
     private func findLocally(input: String) async -> [Country] {
         guard !Task.isCancelled else { return [] }
-        let repository = repositoryFactory.make()
         logger.debug("Filtering countries in DB by name")
         let predicate = CountryQueries().search(byName: input)
         let sortDescriptor = SortDescriptor(\CountryEntity.name)
-        let results = await repository.find(predicate: predicate, sortBy: sortDescriptor)
+        let results = await countryRepository.find(predicate: predicate, sortBy: sortDescriptor)
         logger.debug("found results in DB")
         return results
     }
