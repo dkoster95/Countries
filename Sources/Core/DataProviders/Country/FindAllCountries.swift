@@ -13,8 +13,8 @@ import QuickHatchAsync
 
 public protocol FindAllCountriesDataProvidable: DataProvider<Void, [Country]> {}
 
-public typealias FindAllCountriesRepository = AsyncReadableRepository<Country> & AsyncBatchRepository<Country> & AsyncDeleteableRepository<Country>
-public typealias SyncStatusRepository = AsyncReadableRepository<SyncStatus> & AsyncInsertableRepository<SyncStatus> & AsyncDeleteableRepository<SyncStatus>
+public typealias FindAllCountriesRepository = AsyncReadableRepository<Country> & AsyncBatchRepository<Country> & AsyncDeleteableRepository<Country> & Sendable
+public typealias SyncStatusRepository = AsyncReadableRepository<SyncStatus> & AsyncInsertableRepository<SyncStatus> & AsyncDeleteableRepository<SyncStatus> & Sendable
 
 public protocol FindAllCountriesRepositoryFactorizable: Sendable {
     func make() -> any FindAllCountriesRepository
@@ -25,18 +25,20 @@ public protocol FindAllCountriesRepositoryFactorizable: Sendable {
 public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Sendable {
     private let webAPI: AsyncCountryAPI
     private let logger = Logger(subsystem: "Countries.Core", category: "FindAllCountriesDataProvider")
-    private let repositoryFactory: FindAllCountriesRepositoryFactorizable
     private let offlineStatusValidationDataProvider: any OfflineStatusValidationDataProvidable
     private let taskCoalescer: TaskCoalescing
+    private let countryRepository: any FindAllCountriesRepository
+    private let syncStatusRepository: any SyncStatusRepository
     
     public init(webAPI: AsyncCountryAPI,
                 repositoryFactory: FindAllCountriesRepositoryFactorizable,
                 offlineStatusValidationDataProvider: any OfflineStatusValidationDataProvidable,
                 taskCoalescer: TaskCoalescing) {
         self.webAPI = webAPI
-        self.repositoryFactory = repositoryFactory
         self.offlineStatusValidationDataProvider = offlineStatusValidationDataProvider
         self.taskCoalescer = taskCoalescer
+        self.countryRepository = repositoryFactory.make()
+        self.syncStatusRepository = repositoryFactory.makeSyncStatus()
     }
     
     public func execute(_ input: Void) async throws -> [Country] {
@@ -54,21 +56,14 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
         try Task.checkCancellation()
         logger.debug("\(Thread.current) - finding all countries")
         
-        let repository = repositoryFactory.make()
-        let syncStatusRepository = repositoryFactory.makeSyncStatus()
         logger.debug("\(Thread.current) - repository created")
         logger.info("Finding sync status for \(SyncableEntities.countries.rawValue)")
         if try await isOfflineStatusValid() {
-                let savedCountries = await repository.find()
+                let savedCountries = await countryRepository.find()
                 if !savedCountries.isEmpty {
                     logger.debug("\(Thread.current) - returning saved countries")
                     return savedCountries.sorted { $0.name < $1.name }
                 }
-//            } else {
-//                logger.info("Storage expiration reached proceeding to remove all countries")
-//                try await repository.deleteAll()
-//                logger.info("All countries deleted")
-//            }
         }
         try Task.checkCancellation()
         logger.debug("\(Thread.current) - No data saved, downloading all countries")
@@ -76,7 +71,7 @@ public struct FindAllCountriesDataProvider: FindAllCountriesDataProvidable, Send
         logger.debug("\(response.count) - Country responses downloaded")
         let transformedResponse = response.compactMap { $0.asCountry }
         logger.info("\(transformedResponse.count) valid countries detected")
-        try await repository.add(elements: transformedResponse)
+        try await countryRepository.add(elements: transformedResponse)
         logger.debug("\(Thread.current) - added all elements")
         let syncStatus = SyncStatus(name: SyncableEntities.countries.rawValue)
         _ = try await syncStatusRepository.add(element: syncStatus)
